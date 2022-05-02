@@ -36,22 +36,24 @@
 #endif
 
 // Heuristics options: set them if...
-#define H_INIT_OPTIM     0x01  // if you initialize optimize
-#define H_CHAN_WEIGH     0x02  // for brand new random weights
-#define H_MUTA_WEIGH     0x04  // to slightly change the weights
-#define H_CHAN_LRLIN     0x08  // to linearly change the learning rate
-#define H_CHAN_LRLOG     0x10  // to change the learning rate log scale
-#define H_CHAN_SGAIN     0x20  // to change the sigmoid gain
-#define H_CHAN_MOMEN     0x40  // to change the momentum
-#define H_SHUF_DATAS     0x80  // to shuffle the dataset
-#define H_ZERO_WEIGH    0x100  // to force low weights to 0
-#define H_STOP_TOTER    0x200  // stop optimization if test + train Error < threshold 
-#define H_SELE_WEIGH    0x400  // select best weights over 10 random sets
-#define H_FORC_S_G_D    0x800  // force stochastic gradient descent for faster optimization
-#define H_REG1_WEIGH   0x1000  // use L1 weight regularization
-#define H_REG2_WEIGH   0x2000  // use L2 weight regularization
-#define H_BEST_ETA     0x4000  // search for best learning rate each epoch
-#define H_LABL_SMOOT   0x8000  // label smoothing
+#define H_INIT_OPTIM      0x01  // if you initialize optimize
+#define H_CHAN_WEIGH      0x02  // for brand new random weights
+#define H_MUTA_WEIGH      0x04  // to slightly change the weights
+#define H_CHAN_LRLIN      0x08  // to linearly change the learning rate
+#define H_CHAN_LRLOG      0x10  // to change the learning rate log scale
+#define H_CHAN_SGAIN      0x20  // to change the sigmoid gain
+#define H_CHAN_MOMEN      0x40  // to change the momentum
+#define H_SHUF_DATAS      0x80  // to shuffle the dataset
+#define H_ZERO_WEIGH     0x100  // to force low weights to 0
+#define H_STOP_TOTER     0x200  // stop optimization if test + train Error < threshold 
+#define H_SELE_WEIGH     0x400  // select best weights over 10 random sets
+#define H_FORC_S_G_D     0x800  // force stochastic gradient descent for faster optimization
+#define H_REG1_WEIGH    0x1000  // use L1 weight regularization
+#define H_REG2_WEIGH    0x2000  // use L2 weight regularization
+#define H_BEST_ETA      0x4000  // search for best learning rate each epoch
+#define H_LABL_SMOOT    0x8000  // for label smoothing
+#define H_GRAD_CLIP    0x10000  // for gradient clipping
+#define H_GRAD_SCALE   0x20000  // for gradient scaling
 
 // 9 activation functions
 enum ACTIVATION {
@@ -96,6 +98,8 @@ class MLP
     void setHeurChangeMomentum (bool, float = 0.1f, float = 1.5f);
     void setHeurChangeGain (bool, float = 0.5f, float = 2.0f);
     void setHeurInitialize (bool);
+    void setHeurGradScale (float);
+    void setHeurGradClip (float);
 
     // Activation functions of each layer
     void setActivations (const int *);
@@ -177,7 +181,7 @@ class MLP
     float _minError  = 1000000.0f;
     float _wmin      = -0.5f;
     float _wmax      =  0.5f;
-    float _zeroThreshold = 0.02f;
+    float _zeroThreshold = 0.002f;
     float _logLRmax  = -1.0f;
     float _logLRmin  = -4.0f;
     float _minAlpha  = 0.1f;
@@ -187,6 +191,8 @@ class MLP
 
     float _lambdaRegulL1  = 0.5f;
     float _lambdaRegulL2  = 0.5f;
+    float _gradScale = 1.0f;
+    float _gradClipValue  = 0.75f;
 
     float rTrain = 4.0f / 6.0f;
     float rValid = 1.0f / 6.0f;
@@ -290,6 +296,8 @@ class MLP
     bool     _regulL1        = false;
     bool     _regulL2        = false;
     bool     _labelSmoothing = false;
+    bool     _gradClip       = false;
+    bool     _gradScaling    = false;
 };
 
 inline float halfSquare (const float x) { return 0.5f * pow(x, 2); }

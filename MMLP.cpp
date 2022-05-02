@@ -16,7 +16,7 @@
 MLP::MLP(const int *neurons, const int nLayers, const int verbose)
 {
 	_verbose = verbose;
-	if (_verbose > 0) Serial.printf ("Verbose level : %d\n", _verbose);
+	if (_verbose > 0) Serial.printf ("\n\nVerbose level : %d\n", _verbose);
 	_nLayers = nLayers;
 	if (_nLayers > MAX_LAYERS) Serial.printf ("Too many layers (%d), maximum is: %d\n",_nLayers, MAX_LAYERS);
 	for (uint8_t i = 0; i < _nLayers; ++i) _neurons[i] = neurons[i];
@@ -29,7 +29,7 @@ MLP::MLP(const int *neurons, const int nLayers, const int verbose)
 		Serial.printf("\tInput layer: %d neurons\n", _nInputs);
 		for (int i = 1; i < _nLayers -1; ++i)
 			Serial.printf("\tHidden layer %d: %d neurons\n",i,_neurons[i]);
-		Serial.printf("\tOutput layer: %d neurons\n", _nClasses);
+		Serial.printf("\tOutput layer: %d neurons", _nClasses);
 	}
 }
 
@@ -109,11 +109,12 @@ void MLP::setHyper (const float eta, const float momentum)
 {
 	_eta = eta;
 	_eta0 = eta;
+	_logLRmax = log10(eta);
 	_momentum = momentum;
 
-	if (_verbose > 1)	{
+	if (_verbose > 0)	{
 		Serial.println ("Setting hypermarameters:");
-		Serial.printf(" - Learning rate = %f\n - Momentum = %f\n", _eta, _momentum);
+		Serial.printf(" - Learning rate = %f\n - Momentum      = %f\n", _eta, _momentum);
 	}
 }
 
@@ -154,12 +155,14 @@ void MLP::setHeuristics (uint32_t heuristics)
     _shuffleDataset = _heuristics & H_SHUF_DATAS; // 0x000080
     _zeroWeights    = _heuristics & H_ZERO_WEIGH; // 0x000100
     _stopTotalError = _heuristics & H_STOP_TOTER; // 0x000200
-    _selectWeights  = (_heuristics & H_SELE_WEIGH) & !_initialize; // 0x000400 (not if reading fromm file)
+    _selectWeights  = (_initialize) ? (_heuristics & H_SELE_WEIGH) : 0; // 0x000400 (not if reading fromm file)
     _forceSGD       = _heuristics & H_FORC_S_G_D; // 0x000800
     _regulL1        = _heuristics & H_REG1_WEIGH; // 0x001000
     _regulL2        = _heuristics & H_REG2_WEIGH; // 0x002000
     _bestEta        = _heuristics & H_BEST_ETA  ; // 0x004000
     _labelSmoothing = _heuristics & H_LABL_SMOOT; // 0x008000
+    _gradClip       = _heuristics & H_GRAD_CLIP ; // 0x010000
+    _gradScaling    = _heuristics & H_GRAD_SCALE; // 0x020000
   }
 }
 
@@ -176,12 +179,15 @@ void MLP::displayHeuristics ()
   if (_changeGain)      Serial.println ("- Variable Sigmoid gain");
   if (_changeMom)       Serial.println ("- Variable momentum");
   if (_shuffleDataset)  Serial.println ("- Shuffle dataset if needed");
-  if (_zeroWeights)     Serial.printf  ("- Force weights less than %f to zero\n", _zeroThreshold);
+  if (_zeroWeights)     Serial.printf  ("- Force weights less than %.4f to zero\n", _zeroThreshold);
   if (_stopTotalError)  Serial.println ("- Stop optimization if train + validation error under threshold");
   if (_forceSGD)        Serial.println ("- Force stochastic gradient descent");
   if (_regulL1)         Serial.printf  ("- Use L1 weight regularization (lambda = %.2f)\n", _lambdaRegulL1);
   if (_regulL2)         Serial.printf  ("- Use L2 weight regularization (lambda = %.2f)\n", _lambdaRegulL2);
   if (_bestEta)					Serial.println ("- Search for best learning rate at each epoch");
+  if (_labelSmoothing)  Serial.println ("- Label smoothing ON");
+  if (_gradClip)        Serial.printf  ("- Gradient clipping (clip value %.3f)\n", _gradClipValue);
+  if (_gradScaling)     Serial.printf  ("- Use gradient scaling (Norm to %.3f)\n", _gradScale);
   // if (_parallelRun)     Serial.println ("- Compute using both processors");
   // if (_enableSkip)      Serial.println ("- Layer skip enabled (ResNet like)");
   Serial.println("---------------------------");
@@ -189,6 +195,7 @@ void MLP::displayHeuristics ()
 
 void MLP::setHeurInitialize (bool val) {
   _initialize = val;
+  if (!_initialize) _selectWeights = false;
 }
 
 void MLP::setVerbose (uint8_t verbose) {
@@ -219,10 +226,10 @@ void MLP::setEta (float eta) {
 // Set the variation range for the learning rate (either lin or log scale)
 void MLP::setEtaRange (float from, float to)
 {
-	if (_changeLRlog) {
+	if (_changeLRlog) { // input log values (e.g. -2, -4)
 		_logLRmax = from;
 		_logLRmin = to;
-	} else {
+	} else {            // input linear valuers (e.g. 0.01, 0.0001)
 		_eta0 = from;
 		_etaMin = to;
 	}
@@ -273,6 +280,9 @@ void MLP::setHeurRegulL2 (bool val, float lambda) {
   _regulL2 = val;
   _lambdaRegulL2 = lambda;
 }
+
+void MLP::setHeurGradScale (float val) { _gradScale = val; }
+void MLP::setHeurGradClip (float val) { _gradClipValue = val; }
 
 void MLP::setHeurChangeMomentum (bool val, float minAlpha, float maxAlpha) {
   _changeMom      = val;
@@ -389,7 +399,7 @@ int MLP::size() const
 		nbSynapses += (nWeights + nBiases);
 		if (_verbose > 0) Serial.printf("\tLayer %d: %d weights, %d biases\n",i, nWeights, nBiases);
 	}
-	Serial.printf("\tTotal number of synapses: %d\n", nbSynapses);
+	Serial.printf("\tTotal number of synapses: %d (i.e. weights + biases)\n", nbSynapses);
 	return nbSynapses;
 }
 
@@ -411,7 +421,7 @@ void MLP::displayNetwork()
 				i, _neurons[i], ActivNames[_activations[i-1]], nWeights, nBiases);			
 		}
 	}
-	Serial.printf("Total number of synapses: %d\n", nbSynapses);
+	Serial.printf("Total number of synapses: %d (i.e. weights + biases)\n", nbSynapses);
 	Serial.printf("Average L1 norm of synapses: %f\n",regulL1Weights() / numberOfWeights());
 	Serial.printf("Average L2 norm of synapses: %f\n",regulL2Weights() / numberOfWeights());
 	float mean = meanWeights();
@@ -511,9 +521,9 @@ bool MLP::netLoad(const char* const path)
 	_momentum_save = readFloatFile (file);
 	_eta_save = readFloatFile (file);
 	_gain_save = readFloatFile (file);
-	if (_verbose > 1) Serial.printf("Momentum = %f\n", _momentum_save);
+	if (_verbose > 1) Serial.printf("Momentum      = %f\n", _momentum_save);
 	if (_verbose > 1) Serial.printf("Learning rate = %f\n", _eta_save);
-	if (_verbose > 1) Serial.printf("Gain = %f\n", _gain_save);
+	if (_verbose > 1) Serial.printf("Sigmoid gain  = %f\n", _gain_save);
 
 	// Load layers
 	int nW = 0;
@@ -1301,6 +1311,7 @@ void MLP::heuristics (int epoch, int maxEpochs, bool _better)
 {
 	static bool Aup = true;
 	static bool Gup = true;
+	static uint8_t nbRestore = 0;
 
 	// Restore or change weights if too many epochs without improvement
 	if (epoch - _lastBestEpoch > maxEpochs / 10) {
@@ -1310,10 +1321,12 @@ void MLP::heuristics (int epoch, int maxEpochs, bool _better)
 		} else {
 			Serial.println("Restoring last saved weights");
 			restoreWeights(); // Restore weights
-			// Apply small random changes to weights (3% chance)
-			if (rand01() < 0.4f && _mutateWeights) {
-				float amplitude = 0.025f;
-				if (_verbose > 0) Serial.printf("Random change to weights (amplitude %.3f)\n", amplitude);
+			++nbRestore;
+			// Apply small random changes to weights (10% chance)
+			if ((rand01() < 0.1f && _mutateWeights) || (nbRestore == 3)) {
+				nbRestore = nbRestore % 3; // force weights changes after 3 weight restorations
+				float amplitude = 0.1f; // Change values up to 10%
+				Serial.printf("Random change to weights (amplitude %.1f%%)\n", amplitude * 100);
 				for (int k = 0; k < _nLayers - 1; ++k)
 					Weights[k].randomChange(amplitude);
 			}
@@ -1330,7 +1343,7 @@ void MLP::heuristics (int epoch, int maxEpochs, bool _better)
 	// Apply learning rate variation (lin / log)
 	if (_changeLRlin) {
 		float _eta = _etaMin + epoch * (_eta0 - _etaMin) / maxEpochs;
-		if (_verbose > 1) Serial.printf ("Heuristics: LR = %f, mom = %f\n", _eta, _momentum);		
+		if (_verbose > 0) Serial.printf ("Heuristics: LR = %f, mom = %f\n", _eta, _momentum);		
 	}
 
 	if (_changeLRlog){
@@ -1342,7 +1355,7 @@ void MLP::heuristics (int epoch, int maxEpochs, bool _better)
 	// Apply small random changes to weights (3% chance)
 	if (rand01() < 0.03f && _mutateWeights) {
 		float amplitude = 0.025f;
-		if (_verbose > 0) Serial.printf("Random change to weights (amplitude %.3f)\n", amplitude);
+		if (_verbose > 0) Serial.printf("Random change to weights (amplitude %.1f%%)\n", amplitude * 100);
 		for (int k = 0; k < _nLayers - 1; ++k)
 			Weights[k].randomChange(amplitude);
 	}
@@ -1352,20 +1365,20 @@ void MLP::heuristics (int epoch, int maxEpochs, bool _better)
 	if (_currError / _stopError > 5 && _nDots > 5) {
 		_nDots = 0;
 
-		if (rand01() < 0.33f && _changeMom) {
+		if (rand01() < 0.10f && _changeMom) {
 			float alpha = _momentum;
 			if (alpha <= _minAlpha || alpha >= _maxAlpha) Aup = !Aup;
 			if (Aup) _momentum = alpha + 0.15;
 			else _momentum = alpha - 0.15;
-			if (_verbose > 1) Serial.printf ("Heuristics: changing momentum to %f\n", _momentum);
+			if (_verbose > 0) Serial.printf ("Heuristics: changing momentum to %f\n", _momentum);
 		}
 	
-		if (rand01() < 0.33f && _changeGain) {
+		if (rand01() < 0.10f && _changeGain) {
 			float gain = _gain;
 			if (gain <= _minGain || gain >= _maxGain) Gup = !Gup;
 			if (Gup) _gain = gain + 0.15;
 			else _gain = gain - 0.15;
-			if (_verbose > 1) Serial.printf ("Heuristics: changing Sigmoid gain to %f\n", _gain);
+			if (_verbose > 0) Serial.printf ("Heuristics: changing Sigmoid gain to %f\n", _gain);
 		}
 	
 		// if (_bestEta) {
@@ -1407,6 +1420,20 @@ void MLP::update (std::vector<MLMatrix<float> > &Weights, std::vector<MLMatrix<f
 		MLMatrix<float> W = Weights[k - 1];
 		MLMatrix<float> B = Biases[k - 1];
 
+		if (_gradClip && !_firstRun) {
+			dBiases[_nLayers - 1 - k].clipMax(_gradClipValue);
+			dWeights[_nLayers - 1 - k].clipMax(_gradClipValue);
+		}
+
+		if (_gradScaling && !_firstRun) {
+			bool zeroNorm;
+			dBiases[_nLayers - 1 - k] = dBiases[_nLayers - 1 - k].normScale(_gradScale, zeroNorm);
+			if (zeroNorm) Serial.printf("Warning: biases gradients are zero (layer %d)\n", k);
+			dWeights[_nLayers - 1 - k] = dWeights[_nLayers - 1 - k].normScale(_gradScale, zeroNorm);
+			if (zeroNorm)
+				Serial.printf("Warning: weights gradients are zero (layer %d)\n", k);
+		}
+
 		Biases[k - 1]  -= dBiases[_nLayers - 1 - k]  * (_eta / batchSize);
 		Weights[k - 1] -= dWeights[_nLayers - 1 - k] * (_eta / batchSize);
 		if (!_firstRun) {
@@ -1424,6 +1451,7 @@ void MLP::update (std::vector<MLMatrix<float> > &Weights, std::vector<MLMatrix<f
 		}
 
 		if (_zeroWeights) {
+			// Serial.printf("update : zero clipping %f\n", _zeroThreshold);
 			Biases[k - 1].clipMin(_zeroThreshold);
 			Weights[k - 1].clipMin(_zeroThreshold);
 		}
@@ -1493,6 +1521,8 @@ void MLP::searchBestWeights(std::vector<std::vector<float> > x0, std::vector<std
 // Optimize the network
 void MLP::run(std::vector<std::vector<float> > x0, std::vector<std::vector<float> > y0, int maxEpochs, int batchSize, float stopError)
 {
+	Serial.printf("Batch size = %d\n",batchSize);
+	Serial.printf("Stopping if error < %.3f\n",stopError);
 	Serial.println("\nRunning optimization");
 
 // Dataset
@@ -1675,6 +1705,3 @@ float MLP::testNet(const std::vector<std::vector<float> > x0, const std::vector<
 	}
 	return error / number;
 }
-
-
-
