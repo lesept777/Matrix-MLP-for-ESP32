@@ -37,23 +37,25 @@
 
 // Heuristics options: set them if...
 #define H_INIT_OPTIM      0x01  // if you initialize optimize
-#define H_CHAN_WEIGH      0x02  // for brand new random weights
+#define H_CHAN_WEIGH      0x02  // enable brand new random weights when needed
 #define H_MUTA_WEIGH      0x04  // to slightly change the weights
 #define H_CHAN_LRLIN      0x08  // to linearly change the learning rate
 #define H_CHAN_LRLOG      0x10  // to change the learning rate log scale
-#define H_CHAN_SGAIN      0x20  // to change the sigmoid gain
-#define H_CHAN_MOMEN      0x40  // to change the momentum
+#define H_CHAN_SGAIN      0x20  // to randomly change the sigmoid gain
+#define H_CHAN_MOMEN      0x40  // to randomly change the momentum
 #define H_SHUF_DATAS      0x80  // to shuffle the dataset
 #define H_ZERO_WEIGH     0x100  // to force low weights to 0
 #define H_STOP_TOTER     0x200  // stop optimization if test + train Error < threshold 
 #define H_SELE_WEIGH     0x400  // select best weights over 10 random sets
-#define H_FORC_S_G_D     0x800  // force stochastic gradient descent for faster optimization
+#define H_INIT_XAVIE     0x800  // init weights with Xavier method
 #define H_REG1_WEIGH    0x1000  // use L1 weight regularization
 #define H_REG2_WEIGH    0x2000  // use L2 weight regularization
 #define H_BEST_ETA      0x4000  // search for best learning rate each epoch
 #define H_LABL_SMOOT    0x8000  // for label smoothing
 #define H_GRAD_CLIP    0x10000  // for gradient clipping
 #define H_GRAD_SCALE   0x20000  // for gradient scaling
+#define H_CHAN_MOLIN   0x40000  // change the momentum throughout the epochs
+#define H_DATA_SUBSE   0x80000  // begin training on a subset of the dataset
 
 // 9 activation functions
 enum ACTIVATION {
@@ -61,12 +63,12 @@ enum ACTIVATION {
   SIGMOID,  // 1
   TANH,     // 2
   SOFTMAX,  // 3
-  SIGMOID2, // 4
-  ID,       // 5
-  LEAKYRELU,// 6
+  SIGMOID2, // 4 (sigmoid with constant partswhen close to +-1, quicker)
+  ID,       // 5 (identity)
+  LEAKYRELU,// 6 (returns 0.1 * x if x<0)
   ELU,      // 7
   SELU,     // 8
-  RELU6     // 9
+  RELU6     // 9 (ReLu clipping at 6)
 };
 
 // 3 cost functions
@@ -169,9 +171,9 @@ class MLP
   private:
 
 // Initial values of parameters
-    float _eta       = 0.5f;
+    float _eta       = 0.1f;
     float _eta0      = _eta;
-    float _momentum  = 0.1f;
+    float _momentum  = 0.5f;
     float _gain      = 1.0f;
     float _anneal    = 1.0f;
     float _trainTest = 0.8f;
@@ -181,18 +183,20 @@ class MLP
     float _minError  = 1000000.0f;
     float _wmin      = -0.5f;
     float _wmax      =  0.5f;
-    float _zeroThreshold = 0.002f;
     float _logLRmax  = -1.0f;
     float _logLRmin  = -4.0f;
     float _minAlpha  = 0.1f;
     float _maxAlpha  = 1.5f;
+    float _minMom    = 0.5f;
+    float _maxMom    = 0.99f;
     float _minGain   = 0.5f;
     float _maxGain   = 2.0f;
 
     float _lambdaRegulL1  = 0.5f;
     float _lambdaRegulL2  = 0.5f;
-    float _gradScale = 1.0f;
+    float _gradScale      = 1.0f;
     float _gradClipValue  = 0.75f;
+    float _zeroThreshold  = 0.15f;
 
     float rTrain = 4.0f / 6.0f;
     float rValid = 1.0f / 6.0f;
@@ -208,9 +212,9 @@ class MLP
     uint8_t _cost = 0;
     uint16_t _maxEpochs;
     uint16_t _nTrain, _nValid, _nTest;
+    uint16_t _nData, _batchSize, _lastBestEpoch = 0;
     float _stopError, _prevMinError, _validError;
     float _prevError, _firstError;
-    int _nData, _batchSize, _lastBestEpoch = 0;
     bool _bestEta  = false;
     bool _firstRun = true;
     bool _datasetSplit = false;
@@ -280,24 +284,26 @@ class MLP
                               "LEAKYRELU", "ELU", "SELU"};
 
 // Booleans for the heuristics
-    uint32_t _heuristics     = 0;
+    uint32_t _heuristics     = 131157; // default value for small code
     bool     _initialize     = true;
     bool     _changeWeights  = false;
     bool     _mutateWeights  = false;
     bool     _changeLRlin    = false;
     bool     _changeLRlog    = false;
     bool     _changeMom      = false;
+    bool     _varMom         = false;
     bool     _changeGain     = false;
     bool     _shuffleDataset = false;
     bool     _zeroWeights    = false;
     bool     _stopTotalError = false;
     bool     _selectWeights  = false;
-    bool     _forceSGD       = false;
+    bool     _xavier         = false;
     bool     _regulL1        = false;
     bool     _regulL2        = false;
     bool     _labelSmoothing = false;
     bool     _gradClip       = false;
     bool     _gradScaling    = false;
+    bool     _dataSubset     = false;
 };
 
 inline float halfSquare (const float x) { return 0.5f * pow(x, 2); }
