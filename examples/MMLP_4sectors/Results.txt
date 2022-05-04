@@ -1,0 +1,199 @@
+Verbose level : 1
+Creating network:
+4 layers
+	Input layer: 2 neurons
+	Hidden layer 1: 30 neurons
+	Hidden layer 2: 20 neurons
+	Output layer: 4 neurons
+Processing dataset
+Setting activations:
+	Layer 0: activation SIGMOID
+	Layer 1: activation SIGMOID
+	Layer 2: activation RELU
+Setting hypermarameters:
+ - Learning rate = 0.200000
+ - Momentum      = 0.050000
+Network's size:
+	Layer 0: 60 weights, 30 biases
+	Layer 1: 600 weights, 20 biases
+	Layer 2: 20 weights, 1 biases
+	Total number of synapses: 731 (i.e. weights + biases)
+---------------------------
+Heuristics parameters:
+- Init with random weights
+- Random weights if needed
+- Select best weights at init
+- Variable learning rate (linear scale)
+- Variable Sigmoid gain
+---------------------------
+Sum of ratios is not 100% ( 600.0%): setting ratios to 0.67, 0.17, 0.17
+Dataset split in: 200 train + 50 validation + 50 test data
+Normalizing the dataset
+Batch size = 10
+Stopping if error < 0.025
+
+Running optimization
+Shuffling dataset...
+Creating a new network
+Searching best starting weights
+--> Found better weights (error = 0.4467)
+--> Found better weights (error = 0.2939)
+Estimated maximum duration : 1050.00 s for 100 epochs
+
+Epoch 1 	Average error :   0.2358 (validation   0.3576)
+Epoch 2 	Average error :   0.2337 (validation   0.3525)
+Epoch 3 	Average error :   0.2307 (validation   0.3475)
+Epoch 4 	Average error :   0.2278 (validation   0.3425)
+Epoch 5 	Average error :   0.2249 (validation   0.3375)
+Epoch 6 	Average error :   0.2219 (validation   0.3325)
+Epoch 7 	Average error :   0.2189 (validation   0.3274)
+Epoch 8 	Average error :   0.2157 (validation   0.3221)
+Epoch 9 	Average error :   0.2122 (validation   0.3167)
+Epoch 10 	Average error :   0.2085 (validation   0.3112)
+Epoch 11 	Average error :   0.2045 (validation   0.3055)
+Epoch 12 	Average error :   0.2002 (validation   0.2995)
+Epoch 13 	Average error :   0.1954 (validation   0.2931)
+Epoch 14 	Average error :   0.1902 (validation   0.2863)
+Epoch 15 	Average error :   0.1847 (validation   0.2789)
+Epoch 16 	Average error :   0.1787 (validation   0.2709)
+Epoch 17 	Average error :   0.1724 (validation   0.2624)
+Epoch 18 	Average error :   0.1656 (validation   0.2533)
+Epoch 19 	Average error :   0.1585 (validation   0.2438)
+Epoch 20 	Average error :   0.1515 (validation   0.2339)
+Epoch 21 	Average error :   0.1449 (validation   0.2241)
+Epoch 22 	Average error :   0.1385 (validation   0.2145)
+Epoch 23 	Average error :   0.1326 (validation   0.2052)
+Epoch 24 	Average error :   0.1275 (validation   0.1969)
+Epoch 25 	Average error :   0.1234 (validation   0.1894)
+Epoch 26 	Average error :   0.1202 (validation   0.1830)
+Epoch 27 	Average error :   0.1174 (validation   0.1779)
+Epoch 28 	Average error :   0.1152 (validation   0.1731)
+Epoch 29 	Average error :   0.1139 (validation   0.1689)
+Epoch 30 	Average error :   0.1128 (validation   0.1656)
+Epoch 31 	Average error :   0.1118 (validation   0.1627)
+Epoch 32 	Average error :   0.1111 (validation   0.1603)
+Epoch 33 	Average error :   0.1105 (validation   0.1581)
+Epoch 34 	Average error :   0.1100 (validation   0.1562)
+Epoch 35 	Average error :   0.1097 (validation   0.1546)
+Epoch 36 	Average error :   0.1094 (validation   0.1531)
+Epoch 37 	Average error :   0.1092 (validation   0.1518)
+Epoch 38 	Average error :   0.1090 (validation   0.1506)
+Epoch 39 	Average error :   0.1089 (validation   0.1496)
+Epoch 40 	Average error :   0.1087 (validation   0.1487)
+Epoch 41 	Average error :   0.1086 (validation   0.1478)
+Epoch 42 	Average error :   0.1085 (validation   0.1470)
+Epoch 43 	Average error :   0.1084 (validation   0.1463)
+Epoch 44 	Average error :   0.1083 (validation   0.1457)
+Epoch 45 	Average error :   0.1082 (validation   0.1451)
+Epoch 46 	Average error :   0.1081 (validation   0.1445)
+Epoch 47 	Average error :   0.1080 (validation   0.1440)
+Epoch 48 	Average error :   0.1079 (validation   0.1435)
+Epoch 49 	Average error :   0.1078 (validation   0.1430)
+Epoch 50 	Average error :   0.1078 (validation   0.1425)
+Epoch 51 	Average error :   0.1077 (validation   0.1420)
+Epoch 52 	Average error :   0.1076 (validation   0.1416)
+Epoch 53 	Average error :   0.1075 (validation   0.1412)
+Epoch 54 	Average error :   0.1074 (validation   0.1408)
+Epoch 55 	Average error :   0.1074 (validation   0.1404)
+Epoch 56 	Average error :   0.1073 (validation   0.1401)
+Epoch 57 	Average error :   0.1072 (validation   0.1397)
+Epoch 58 	Average error :   0.1071 (validation   0.1393)
+Epoch 59 	Average error :   0.1070 (validation   0.1390)
+Epoch 60 	Average error :   0.1069 (validation   0.1386)
+Epoch 61 	Average error :   0.1069 (validation   0.1383)
+Epoch 62 	Average error :   0.1068 (validation   0.1380)
+Epoch 63 	Average error :   0.1067 (validation   0.1376)
+Epoch 64 	Average error :   0.1066 (validation   0.1373)
+Epoch 65 	Average error :   0.1066 (validation   0.1369)
+Epoch 66 	Average error :   0.1065 (validation   0.1366)
+Epoch 67 	Average error :   0.1064 (validation   0.1363)
+Epoch 68 	Average error :   0.1063 (validation   0.1359)
+Epoch 69 	Average error :   0.1063 (validation   0.1356)
+Epoch 70 	Average error :   0.1062 (validation   0.1353)
+Epoch 71 	Average error :   0.1061 (validation   0.1350)
+Epoch 72 	Average error :   0.1060 (validation   0.1346)
+Epoch 73 	Average error :   0.1060 (validation   0.1344)
+Epoch 74 	Average error :   0.1059 (validation   0.1341)
+Epoch 75 	Average error :   0.1058 (validation   0.1338)
+Epoch 76 	Average error :   0.1057 (validation   0.1335)
+Epoch 77 	Average error :   0.1057 (validation   0.1333)
+Epoch 78 	Average error :   0.1056 (validation   0.1330)
+Epoch 79 	Average error :   0.1055 (validation   0.1327)
+Epoch 80 	Average error :   0.1055 (validation   0.1324)
+Epoch 81 	Average error :   0.1054 (validation   0.1322)
+Epoch 82 	Average error :   0.1053 (validation   0.1319)
+Epoch 83 	Average error :   0.1053 (validation   0.1317)
+Epoch 84 	Average error :   0.1052 (validation   0.1314)
+Epoch 85 	Average error :   0.1051 (validation   0.1312)
+Epoch 86 	Average error :   0.1051 (validation   0.1309)
+Epoch 87 	Average error :   0.1050 (validation   0.1307)
+Epoch 88 	Average error :   0.1049 (validation   0.1304)
+Epoch 89 	Average error :   0.1049 (validation   0.1302)
+Epoch 90 	Average error :   0.1048 (validation   0.1300)
+Epoch 91 	Average error :   0.1047 (validation   0.1298)
+Epoch 92 	Average error :   0.1047 (validation   0.1296)
+Epoch 93 	Average error :   0.1046 (validation   0.1294)
+Epoch 94 	Average error :   0.1046 (validation   0.1292)
+Epoch 95 	Average error :   0.1045 (validation   0.1290)
+Epoch 96 	Average error :   0.1045 (validation   0.1288)
+Epoch 97 	Average error :   0.1044 (validation   0.1286)
+Epoch 98 	Average error :   0.1043 (validation   0.1285)
+Epoch 99 	Average error :   0.1043 (validation   0.1283)
+Epoch 100 	Average error :   0.1042 (validation   0.1281)
+
+Timer : 682.28 s
+
+Evaluation on test data (50 samples):
+ - Minimum value of error :   0.0000
+ - Maximum value of error :   0.4500
+ - Mean value of error    :   0.1517
+ - Std deviation of error :   0.1260
+ - L1 norm of error :   0.4500
+ - L2 norm of error :   1.3943
+Average test error  :   0.1517
+Saving network in file /SectorNetwork.txt
+
+Verification:
+Validation  0: expected 0, prediction 0 -->OK
+Validation  1: expected 3, prediction 2 -->NOK
+Validation  2: expected 1, prediction 1 -->OK
+Validation  3: expected 0, prediction 0 -->OK
+Validation  4: expected 2, prediction 2 -->OK
+Validation  5: expected 1, prediction 0 -->NOK
+Validation  6: expected 0, prediction 0 -->OK
+Validation  7: expected 1, prediction 2 -->NOK
+Validation  8: expected 0, prediction 0 -->OK
+Validation  9: expected 2, prediction 1 -->NOK
+Validation 10: expected 1, prediction 2 -->NOK
+Validation 11: expected 1, prediction 0 -->NOK
+Validation 12: expected 1, prediction 2 -->NOK
+Validation 13: expected 1, prediction 2 -->NOK
+Validation 14: expected 1, prediction 2 -->NOK
+Validation 15: expected 0, prediction 0 -->OK
+Validation 16: expected 1, prediction 2 -->NOK
+Validation 17: expected 1, prediction 0 -->NOK
+Validation 18: expected 2, prediction 1 -->NOK
+Validation 19: expected 2, prediction 1 -->NOK
+Mean classification rate : 35.00 %
+---------------------------
+Network has 4 layers:
+Layer 0: 2 neurons
+Layer 1: 30 neurons, activation SIGMOID, 60 weights, 30 biases
+Layer 2: 20 neurons, activation SIGMOID, 600 weights, 20 biases
+Layer 3: 1 neurons, activation RELU, 20 weights, 1 biases
+Total number of synapses: 731 (i.e. weights + biases)
+Average L1 norm of synapses: 0.278424
+Average L2 norm of synapses: 0.053348
+Average value of synapses:   -0.036470
+Standard dev. of synapses:   0.324602
+Ratio of synapses greater than 1:    0.27 %
+Ratio of synapses less than 1:      81.12 %
+Ratio of synapses less than 0.1:    16.01 %
+Ratio of synapses less than 0.01:    2.19 %
+Ratio of synapses less than 0.001:   0.41 %
+Ratio of synapses less than 0.0001:  0.00 %
+
+Final learning rate: 0.200000
+Final gain         : 1.000000
+Final momentum     : 0.050000
+---------------------------

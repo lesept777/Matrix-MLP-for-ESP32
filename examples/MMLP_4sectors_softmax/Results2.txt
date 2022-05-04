@@ -1,0 +1,148 @@
+Without option H_DATA_SUBSE
+--> longer computation time (+30%)
+
+Verbose level : 1
+Creating network:
+4 layers
+	Input layer: 2 neurons
+	Hidden layer 1: 30 neurons
+	Hidden layer 2: 20 neurons
+	Output layer: 4 neurons
+Processing dataset
+Setting activations:
+	Layer 0: activation SIGMOID
+	Layer 1: activation SIGMOID
+	Layer 2: activation SOFTMAX
+Setting hypermarameters:
+ - Learning rate = 0.200000
+ - Momentum      = 0.500000
+Network's size:
+	Layer 0: 60 weights, 30 biases
+	Layer 1: 600 weights, 20 biases
+	Layer 2: 80 weights, 4 biases
+	Total number of synapses: 794 (i.e. weights + biases)
+---------------------------
+Heuristics parameters:
+- Init with random weights
+- Select best weights at init
+- Slightly change weights if needed
+- Variable learning rate (log scale)
+- Random variable Sigmoid gain
+- Force weights less than 0.1500 to zero
+- Gradient clipping (clip value 0.750)
+---------------------------
+Sum of ratios is not 100% (600.0%): setting ratios to 0.67, 0.17, 0.17
+Dataset split in: 200 train + 50 validation + 50 test data
+Normalizing the dataset
+Batch size = 10
+Stopping if error < 0.030
+
+Running optimization
+Shuffling dataset...
+Creating a new network
+Searching best starting weights
+--> Found better weights (error = 0.9900)
+--> Found better weights (error = 0.5300)
+Estimated maximum duration : 2898.00 s for 100 epochs
+
+Epoch 1 	Average error :   1.0950 (validation   0.6400)
+.
+Epoch 3 	Average error :   1.0350 (validation   0.7600)
+.
+Epoch 5 	Average error :   0.9900 (validation   0.7200)
+Epoch 6 	Average error :   0.9700 (validation   0.6400)
+Epoch 7 	Average error :   0.9350 (validation   0.6400)
+Epoch 8 	Average error :   0.8650 (validation   0.6400)
+Epoch 9 	Average error :   0.7650 (validation   0.6200)
+Epoch 10 	Average error :   0.6300 (validation   0.4600)
+Epoch 11 	Average error :   0.5550 (validation   0.3800)
+Epoch 12 	Average error :   0.4350 (validation   0.3600)
+Epoch 13 	Average error :   0.3200 (validation   0.2800)
+Epoch 14 	Average error :   0.2800 (validation   0.2400)
+Epoch 15 	Average error :   0.2450 (validation   0.2400)
+Epoch 16 	Average error :   0.1550 (validation   0.1400)
+Epoch 17 	Average error :   0.1400 (validation   0.1200)
+Epoch 18 	Average error :   0.1350 (validation   0.1200)
+Epoch 19 	Average error :   0.1300 (validation   0.1600)
+Epoch 20 	Average error :   0.1250 (validation   0.1600)
+Epoch 21 	Average error :   0.1050 (validation   0.1600)
+Random change to weights (amplitude 2.5%)
+Epoch 22 	Average error :   0.0850 (validation   0.1600)
+.
+Epoch 24 	Average error :   0.0750 (validation   0.1600)
+..
+Epoch 27 	Average error :   0.0700 (validation   0.1400)
+..
+Epoch 30 	Average error :   0.0600 (validation   0.1400)
+.Random change to weights (amplitude 2.5%)
+.......
+Epoch 39 	Average error :   0.0500 (validation   0.1400)
+..........Restoring last saved weights
+..........
+Epoch 60 	Average error :   0.0400 (validation   0.1400)
+..........Restoring last saved weights
+Random change to weights (amplitude 10.0%)
+...........Restoring last saved weights
+Random change to weights (amplitude 10.0%)
+........Random change to weights (amplitude 2.5%)
+...Restoring last saved weights
+Random change to weights (amplitude 10.0%)
+........
+Timer : 1616.26 s
+
+Evaluation on test data (50 samples):
+ - Minimum value of error :   0.0000
+ - Maximum value of error :   2.0000
+ - Mean value of error    :   0.2000
+ - Std deviation of error :   0.5657
+ - L1 norm of error :   2.0000
+ - L2 norm of error :   4.2426
+ - Mean classification rate : 88.00%
+Average test error  :   0.2000
+Saving network in file /SectorNetwork.txt
+
+Verification:
+Validation  0: expected 2, prediction 2 -->OK
+Validation  1: expected 3, prediction 3 -->OK
+Validation  2: expected 0, prediction 0 -->OK
+Validation  3: expected 0, prediction 0 -->OK
+Validation  4: expected 3, prediction 3 -->OK
+Validation  5: expected 0, prediction 0 -->OK
+Validation  6: expected 2, prediction 2 -->OK
+Validation  7: expected 2, prediction 2 -->OK
+Validation  8: expected 0, prediction 1 -->NOK
+Validation  9: expected 2, prediction 2 -->OK
+Validation 10: expected 1, prediction 1 -->OK
+Validation 11: expected 3, prediction 3 -->OK
+Validation 12: expected 3, prediction 3 -->OK
+Validation 13: expected 1, prediction 1 -->OK
+Validation 14: expected 2, prediction 2 -->OK
+Validation 15: expected 0, prediction 0 -->OK
+Validation 16: expected 2, prediction 2 -->OK
+Validation 17: expected 2, prediction 2 -->OK
+Validation 18: expected 2, prediction 2 -->OK
+Validation 19: expected 2, prediction 2 -->OK
+Mean classification rate : 95.00 %
+
+---------------------------
+Network has 4 layers:
+Layer 0: 2 neurons
+Layer 1: 30 neurons, activation SIGMOID, 60 weights, 30 biases
+Layer 2: 20 neurons, activation SIGMOID, 600 weights, 20 biases
+Layer 3: 4 neurons, activation SOFTMAX, 80 weights, 4 biases
+Total number of synapses: 794 (i.e. weights + biases)
+Average L1 norm of synapses: 0.451235
+Average L2 norm of synapses: 0.388584
+Average value of synapses:   -0.026585
+Standard dev. of synapses:   0.881169
+Ratio of synapses greater than 1:   14.48 %
+Ratio of synapses less than 1:      35.39 %
+Ratio of synapses less than 0.1:     0.00 %
+Ratio of synapses less than 0.01:    0.00 %
+Ratio of synapses less than 0.001:   0.00 %
+Ratio of synapses less than 0.0001: 50.13 %
+
+Final learning rate: 0.002091
+Final Sigmoid gain : 1.000000
+Final momentum     : 0.500000
+---------------------------

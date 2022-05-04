@@ -1,0 +1,369 @@
+Verbose level : 1
+Creating network:
+4 layers
+	Input layer: 1 neurons
+	Hidden layer 1: 8 neurons
+	Hidden layer 2: 3 neurons
+	Output layer: 1 neuronsSetting activations:
+	Layer 0: activation TANH
+	Layer 1: activation TANH
+	Layer 2: activation TANH
+Setting hypermarameters:
+ - Learning rate = 0.500000
+ - Momentum      = 0.100000
+Network's size:
+	Layer 0: 8 weights, 8 biases
+	Layer 1: 24 weights, 3 biases
+	Layer 2: 3 weights, 1 biases
+	Total number of synapses: 47 (i.e. weights + biases)
+Creating dataset from vector
+Sum of ratios is not 100% (600.0%): setting ratios to 0.67, 0.17, 0.17
+Dataset split in: 100 train + 25 validation + 25 test data
+Batch size = 2
+Stopping if error < 0.020
+
+Running optimization
+Shuffling dataset...
+Creating a new network
+Estimated maximum duration : 378.00 s for 300 epochs
+
+Epoch 1 	Average error :   0.2198 (validation   0.2116)
+Epoch 2 	Average error :   0.2065 (validation   0.2154)
+.......
+Epoch 10 	Average error :   0.2057 (validation   0.2069)
+Epoch 11 	Average error :   0.2036 (validation   0.2050)
+Epoch 12 	Average error :   0.2016 (validation   0.2034)
+Epoch 13 	Average error :   0.1996 (validation   0.2019)
+Epoch 14 	Average error :   0.1977 (validation   0.2004)
+Epoch 15 	Average error :   0.1959 (validation   0.1986)
+Epoch 16 	Average error :   0.1939 (validation   0.1965)
+Epoch 17 	Average error :   0.1915 (validation   0.1940)
+Epoch 18 	Average error :   0.1887 (validation   0.1910)
+Epoch 19 	Average error :   0.1856 (validation   0.1876)
+Epoch 20 	Average error :   0.1828 (validation   0.1838)
+Epoch 21 	Average error :   0.1799 (validation   0.1799)
+Epoch 22 	Average error :   0.1768 (validation   0.1761)
+Epoch 23 	Average error :   0.1729 (validation   0.1717)
+Epoch 24 	Average error :   0.1687 (validation   0.1671)
+Epoch 25 	Average error :   0.1645 (validation   0.1624)
+Epoch 26 	Average error :   0.1604 (validation   0.1579)
+Epoch 27 	Average error :   0.1568 (validation   0.1537)
+Epoch 28 	Average error :   0.1534 (validation   0.1499)
+Epoch 29 	Average error :   0.1509 (validation   0.1464)
+Epoch 30 	Average error :   0.1488 (validation   0.1430)
+Epoch 31 	Average error :   0.1467 (validation   0.1397)
+Epoch 32 	Average error :   0.1445 (validation   0.1363)
+Epoch 33 	Average error :   0.1422 (validation   0.1330)
+Epoch 34 	Average error :   0.1397 (validation   0.1298)
+Epoch 35 	Average error :   0.1372 (validation   0.1271)
+Epoch 36 	Average error :   0.1349 (validation   0.1247)
+Epoch 37 	Average error :   0.1326 (validation   0.1229)
+Epoch 38 	Average error :   0.1304 (validation   0.1213)
+Epoch 39 	Average error :   0.1284 (validation   0.1201)
+Epoch 40 	Average error :   0.1265 (validation   0.1202)
+Epoch 41 	Average error :   0.1247 (validation   0.1211)
+Epoch 42 	Average error :   0.1227 (validation   0.1224)
+Epoch 43 	Average error :   0.1208 (validation   0.1241)
+Epoch 44 	Average error :   0.1188 (validation   0.1260)
+Epoch 45 	Average error :   0.1168 (validation   0.1281)
+Epoch 46 	Average error :   0.1146 (validation   0.1304)
+Epoch 47 	Average error :   0.1123 (validation   0.1327)
+Epoch 48 	Average error :   0.1100 (validation   0.1342)
+Epoch 49 	Average error :   0.1081 (validation   0.1354)
+Epoch 50 	Average error :   0.1054 (validation   0.1336)
+Epoch 51 	Average error :   0.1016 (validation   0.1276)
+Epoch 52 	Average error :   0.0974 (validation   0.1394)
+.
+Epoch 54 	Average error :   0.0816 (validation   0.1268)
+...
+Epoch 58 	Average error :   0.0767 (validation   0.1129)
+Epoch 59 	Average error :   0.0741 (validation   0.1047)
+Epoch 60 	Average error :   0.0715 (validation   0.1029)
+Epoch 61 	Average error :   0.0703 (validation   0.1007)
+Epoch 62 	Average error :   0.0692 (validation   0.0997)
+Epoch 63 	Average error :   0.0681 (validation   0.0985)
+Epoch 64 	Average error :   0.0671 (validation   0.0973)
+Epoch 65 	Average error :   0.0660 (validation   0.0962)
+Epoch 66 	Average error :   0.0650 (validation   0.0949)
+Epoch 67 	Average error :   0.0641 (validation   0.0937)
+Epoch 68 	Average error :   0.0632 (validation   0.0923)
+Epoch 69 	Average error :   0.0626 (validation   0.0910)
+Epoch 70 	Average error :   0.0618 (validation   0.0898)
+Epoch 71 	Average error :   0.0611 (validation   0.0885)
+Epoch 72 	Average error :   0.0605 (validation   0.0874)
+Epoch 73 	Average error :   0.0598 (validation   0.0863)
+Epoch 74 	Average error :   0.0592 (validation   0.0853)
+Epoch 75 	Average error :   0.0585 (validation   0.0844)
+Epoch 76 	Average error :   0.0580 (validation   0.0837)
+Epoch 77 	Average error :   0.0575 (validation   0.0830)
+Epoch 78 	Average error :   0.0570 (validation   0.0825)
+Epoch 79 	Average error :   0.0565 (validation   0.0821)
+Epoch 80 	Average error :   0.0561 (validation   0.0818)
+Epoch 81 	Average error :   0.0556 (validation   0.0816)
+Epoch 82 	Average error :   0.0552 (validation   0.0815)
+Epoch 83 	Average error :   0.0549 (validation   0.0816)
+Epoch 84 	Average error :   0.0545 (validation   0.0817)
+Epoch 85 	Average error :   0.0542 (validation   0.0819)
+Epoch 86 	Average error :   0.0539 (validation   0.0821)
+Epoch 87 	Average error :   0.0537 (validation   0.0824)
+Epoch 88 	Average error :   0.0534 (validation   0.0827)
+Epoch 89 	Average error :   0.0532 (validation   0.0831)
+Epoch 90 	Average error :   0.0529 (validation   0.0835)
+Epoch 91 	Average error :   0.0527 (validation   0.0838)
+Epoch 92 	Average error :   0.0525 (validation   0.0843)
+Epoch 93 	Average error :   0.0524 (validation   0.0847)
+Epoch 94 	Average error :   0.0522 (validation   0.0852)
+Epoch 95 	Average error :   0.0520 (validation   0.0857)
+Epoch 96 	Average error :   0.0518 (validation   0.0861)
+Epoch 97 	Average error :   0.0517 (validation   0.0866)
+Epoch 98 	Average error :   0.0515 (validation   0.0870)
+Epoch 99 	Average error :   0.0514 (validation   0.0874)
+Epoch 100 	Average error :   0.0512 (validation   0.0878)
+Epoch 101 	Average error :   0.0510 (validation   0.0881)
+Epoch 102 	Average error :   0.0509 (validation   0.0884)
+Epoch 103 	Average error :   0.0507 (validation   0.0888)
+Epoch 104 	Average error :   0.0506 (validation   0.0890)
+Epoch 105 	Average error :   0.0505 (validation   0.0893)
+Epoch 106 	Average error :   0.0503 (validation   0.0895)
+Epoch 107 	Average error :   0.0502 (validation   0.0898)
+Epoch 108 	Average error :   0.0500 (validation   0.0900)
+Epoch 109 	Average error :   0.0498 (validation   0.0901)
+Epoch 110 	Average error :   0.0496 (validation   0.0903)
+Epoch 111 	Average error :   0.0495 (validation   0.0904)
+Epoch 112 	Average error :   0.0493 (validation   0.0904)
+Epoch 113 	Average error :   0.0491 (validation   0.0905)
+Epoch 114 	Average error :   0.0489 (validation   0.0905)
+Epoch 115 	Average error :   0.0488 (validation   0.0905)
+Epoch 116 	Average error :   0.0486 (validation   0.0905)
+Epoch 117 	Average error :   0.0484 (validation   0.0904)
+Epoch 118 	Average error :   0.0483 (validation   0.0903)
+Epoch 119 	Average error :   0.0481 (validation   0.0902)
+Epoch 120 	Average error :   0.0479 (validation   0.0901)
+Epoch 121 	Average error :   0.0477 (validation   0.0899)
+Epoch 122 	Average error :   0.0476 (validation   0.0897)
+Epoch 123 	Average error :   0.0474 (validation   0.0894)
+Epoch 124 	Average error :   0.0472 (validation   0.0892)
+Epoch 125 	Average error :   0.0471 (validation   0.0889)
+Epoch 126 	Average error :   0.0469 (validation   0.0886)
+Epoch 127 	Average error :   0.0467 (validation   0.0883)
+Epoch 128 	Average error :   0.0466 (validation   0.0879)
+Epoch 129 	Average error :   0.0464 (validation   0.0875)
+Epoch 130 	Average error :   0.0462 (validation   0.0871)
+Epoch 131 	Average error :   0.0461 (validation   0.0867)
+Epoch 132 	Average error :   0.0459 (validation   0.0863)
+Epoch 133 	Average error :   0.0458 (validation   0.0859)
+Epoch 134 	Average error :   0.0456 (validation   0.0855)
+Epoch 135 	Average error :   0.0455 (validation   0.0850)
+Epoch 136 	Average error :   0.0454 (validation   0.0846)
+Epoch 137 	Average error :   0.0452 (validation   0.0841)
+Epoch 138 	Average error :   0.0451 (validation   0.0837)
+Epoch 139 	Average error :   0.0449 (validation   0.0832)
+Epoch 140 	Average error :   0.0448 (validation   0.0828)
+Epoch 141 	Average error :   0.0447 (validation   0.0823)
+Epoch 142 	Average error :   0.0445 (validation   0.0819)
+Epoch 143 	Average error :   0.0444 (validation   0.0814)
+Epoch 144 	Average error :   0.0442 (validation   0.0810)
+Epoch 145 	Average error :   0.0441 (validation   0.0805)
+Epoch 146 	Average error :   0.0440 (validation   0.0801)
+Epoch 147 	Average error :   0.0438 (validation   0.0797)
+Epoch 148 	Average error :   0.0437 (validation   0.0792)
+Epoch 149 	Average error :   0.0436 (validation   0.0788)
+Epoch 150 	Average error :   0.0434 (validation   0.0784)
+Epoch 151 	Average error :   0.0433 (validation   0.0779)
+Epoch 152 	Average error :   0.0432 (validation   0.0775)
+Epoch 153 	Average error :   0.0430 (validation   0.0771)
+Epoch 154 	Average error :   0.0429 (validation   0.0767)
+Epoch 155 	Average error :   0.0428 (validation   0.0763)
+Epoch 156 	Average error :   0.0427 (validation   0.0759)
+Epoch 157 	Average error :   0.0425 (validation   0.0755)
+Epoch 158 	Average error :   0.0424 (validation   0.0751)
+Epoch 159 	Average error :   0.0423 (validation   0.0747)
+Epoch 160 	Average error :   0.0421 (validation   0.0743)
+Epoch 161 	Average error :   0.0420 (validation   0.0739)
+Epoch 162 	Average error :   0.0419 (validation   0.0735)
+Epoch 163 	Average error :   0.0418 (validation   0.0731)
+Epoch 164 	Average error :   0.0416 (validation   0.0728)
+Epoch 165 	Average error :   0.0415 (validation   0.0724)
+Epoch 166 	Average error :   0.0414 (validation   0.0721)
+Epoch 167 	Average error :   0.0413 (validation   0.0717)
+Epoch 168 	Average error :   0.0411 (validation   0.0714)
+Epoch 169 	Average error :   0.0410 (validation   0.0710)
+Epoch 170 	Average error :   0.0409 (validation   0.0707)
+Epoch 171 	Average error :   0.0408 (validation   0.0703)
+Epoch 172 	Average error :   0.0407 (validation   0.0700)
+Epoch 173 	Average error :   0.0405 (validation   0.0697)
+Epoch 174 	Average error :   0.0404 (validation   0.0693)
+Epoch 175 	Average error :   0.0403 (validation   0.0690)
+Epoch 176 	Average error :   0.0402 (validation   0.0687)
+Epoch 177 	Average error :   0.0401 (validation   0.0684)
+Epoch 178 	Average error :   0.0400 (validation   0.0681)
+Epoch 179 	Average error :   0.0399 (validation   0.0677)
+Epoch 180 	Average error :   0.0398 (validation   0.0674)
+Epoch 181 	Average error :   0.0397 (validation   0.0671)
+Epoch 182 	Average error :   0.0396 (validation   0.0668)
+Epoch 183 	Average error :   0.0395 (validation   0.0665)
+Epoch 184 	Average error :   0.0394 (validation   0.0662)
+Epoch 185 	Average error :   0.0393 (validation   0.0659)
+Epoch 186 	Average error :   0.0392 (validation   0.0656)
+Epoch 187 	Average error :   0.0391 (validation   0.0653)
+Epoch 188 	Average error :   0.0390 (validation   0.0650)
+Epoch 189 	Average error :   0.0389 (validation   0.0647)
+Epoch 190 	Average error :   0.0388 (validation   0.0644)
+Epoch 191 	Average error :   0.0387 (validation   0.0641)
+Epoch 192 	Average error :   0.0386 (validation   0.0638)
+Epoch 193 	Average error :   0.0385 (validation   0.0635)
+Epoch 194 	Average error :   0.0384 (validation   0.0632)
+Epoch 195 	Average error :   0.0383 (validation   0.0629)
+Epoch 196 	Average error :   0.0382 (validation   0.0626)
+Epoch 197 	Average error :   0.0381 (validation   0.0623)
+Epoch 198 	Average error :   0.0380 (validation   0.0619)
+Epoch 199 	Average error :   0.0379 (validation   0.0616)
+Epoch 200 	Average error :   0.0378 (validation   0.0613)
+Epoch 201 	Average error :   0.0377 (validation   0.0610)
+Epoch 202 	Average error :   0.0376 (validation   0.0606)
+Epoch 203 	Average error :   0.0375 (validation   0.0603)
+Epoch 204 	Average error :   0.0374 (validation   0.0600)
+Epoch 205 	Average error :   0.0373 (validation   0.0596)
+Epoch 206 	Average error :   0.0372 (validation   0.0593)
+Epoch 207 	Average error :   0.0371 (validation   0.0589)
+Epoch 208 	Average error :   0.0370 (validation   0.0586)
+Epoch 209 	Average error :   0.0368 (validation   0.0582)
+Epoch 210 	Average error :   0.0367 (validation   0.0578)
+Epoch 211 	Average error :   0.0366 (validation   0.0574)
+Epoch 212 	Average error :   0.0365 (validation   0.0570)
+Epoch 213 	Average error :   0.0364 (validation   0.0566)
+Epoch 214 	Average error :   0.0363 (validation   0.0562)
+Epoch 215 	Average error :   0.0362 (validation   0.0558)
+Epoch 216 	Average error :   0.0360 (validation   0.0554)
+Epoch 217 	Average error :   0.0359 (validation   0.0549)
+Epoch 218 	Average error :   0.0358 (validation   0.0545)
+Epoch 219 	Average error :   0.0357 (validation   0.0540)
+Epoch 220 	Average error :   0.0356 (validation   0.0535)
+Epoch 221 	Average error :   0.0354 (validation   0.0530)
+Epoch 222 	Average error :   0.0353 (validation   0.0525)
+Epoch 223 	Average error :   0.0352 (validation   0.0520)
+Epoch 224 	Average error :   0.0350 (validation   0.0515)
+Epoch 225 	Average error :   0.0349 (validation   0.0509)
+Epoch 226 	Average error :   0.0348 (validation   0.0504)
+Epoch 227 	Average error :   0.0346 (validation   0.0498)
+Epoch 228 	Average error :   0.0345 (validation   0.0492)
+Epoch 229 	Average error :   0.0343 (validation   0.0486)
+Epoch 230 	Average error :   0.0341 (validation   0.0480)
+Epoch 231 	Average error :   0.0340 (validation   0.0474)
+Epoch 232 	Average error :   0.0338 (validation   0.0468)
+Epoch 233 	Average error :   0.0336 (validation   0.0461)
+Epoch 234 	Average error :   0.0334 (validation   0.0454)
+Epoch 235 	Average error :   0.0333 (validation   0.0448)
+Epoch 236 	Average error :   0.0331 (validation   0.0441)
+Epoch 237 	Average error :   0.0329 (validation   0.0434)
+Epoch 238 	Average error :   0.0327 (validation   0.0427)
+Epoch 239 	Average error :   0.0325 (validation   0.0420)
+Epoch 240 	Average error :   0.0323 (validation   0.0413)
+Epoch 241 	Average error :   0.0321 (validation   0.0406)
+Epoch 242 	Average error :   0.0319 (validation   0.0398)
+Epoch 243 	Average error :   0.0316 (validation   0.0391)
+Epoch 244 	Average error :   0.0314 (validation   0.0384)
+Epoch 245 	Average error :   0.0312 (validation   0.0377)
+Epoch 246 	Average error :   0.0310 (validation   0.0370)
+Epoch 247 	Average error :   0.0308 (validation   0.0363)
+Epoch 248 	Average error :   0.0306 (validation   0.0356)
+Epoch 249 	Average error :   0.0304 (validation   0.0349)
+Epoch 250 	Average error :   0.0302 (validation   0.0342)
+Epoch 251 	Average error :   0.0300 (validation   0.0336)
+Epoch 252 	Average error :   0.0297 (validation   0.0329)
+Epoch 253 	Average error :   0.0295 (validation   0.0323)
+Epoch 254 	Average error :   0.0293 (validation   0.0316)
+Epoch 255 	Average error :   0.0291 (validation   0.0310)
+Epoch 256 	Average error :   0.0289 (validation   0.0304)
+Epoch 257 	Average error :   0.0287 (validation   0.0298)
+Epoch 258 	Average error :   0.0285 (validation   0.0292)
+Epoch 259 	Average error :   0.0283 (validation   0.0287)
+Epoch 260 	Average error :   0.0281 (validation   0.0282)
+Epoch 261 	Average error :   0.0280 (validation   0.0276)
+Epoch 262 	Average error :   0.0278 (validation   0.0271)
+Epoch 263 	Average error :   0.0276 (validation   0.0266)
+Epoch 264 	Average error :   0.0274 (validation   0.0262)
+Epoch 265 	Average error :   0.0273 (validation   0.0257)
+Epoch 266 	Average error :   0.0271 (validation   0.0253)
+Epoch 267 	Average error :   0.0270 (validation   0.0248)
+Epoch 268 	Average error :   0.0268 (validation   0.0244)
+Epoch 269 	Average error :   0.0266 (validation   0.0240)
+Epoch 270 	Average error :   0.0265 (validation   0.0237)
+Epoch 271 	Average error :   0.0263 (validation   0.0233)
+Epoch 272 	Average error :   0.0262 (validation   0.0230)
+Epoch 273 	Average error :   0.0261 (validation   0.0227)
+Epoch 274 	Average error :   0.0259 (validation   0.0225)
+Epoch 275 	Average error :   0.0258 (validation   0.0223)
+Epoch 276 	Average error :   0.0257 (validation   0.0221)
+Epoch 277 	Average error :   0.0256 (validation   0.0219)
+Epoch 278 	Average error :   0.0255 (validation   0.0217)
+Epoch 279 	Average error :   0.0254 (validation   0.0216)
+Epoch 280 	Average error :   0.0253 (validation   0.0214)
+Epoch 281 	Average error :   0.0252 (validation   0.0213)
+Epoch 282 	Average error :   0.0251 (validation   0.0212)
+Epoch 283 	Average error :   0.0250 (validation   0.0211)
+Epoch 284 	Average error :   0.0249 (validation   0.0210)
+Epoch 285 	Average error :   0.0248 (validation   0.0209)
+Epoch 286 	Average error :   0.0247 (validation   0.0208)
+Epoch 287 	Average error :   0.0246 (validation   0.0207)
+Epoch 288 	Average error :   0.0245 (validation   0.0206)
+Epoch 289 	Average error :   0.0244 (validation   0.0206)
+Epoch 290 	Average error :   0.0243 (validation   0.0205)
+Epoch 291 	Average error :   0.0243 (validation   0.0205)
+Epoch 292 	Average error :   0.0242 (validation   0.0204)
+Epoch 293 	Average error :   0.0241 (validation   0.0204)
+Epoch 294 	Average error :   0.0240 (validation   0.0203)
+Epoch 295 	Average error :   0.0240 (validation   0.0203)
+Epoch 296 	Average error :   0.0239 (validation   0.0202)
+Epoch 297 	Average error :   0.0238 (validation   0.0202)
+Epoch 298 	Average error :   0.0237 (validation   0.0201)
+Epoch 299 	Average error :   0.0237 (validation   0.0201)
+Epoch 300 	Average error :   0.0236 (validation   0.0200)
+
+Timer : 311.35 s
+
+Evaluation on test data (25 samples):
+ - Minimum value of error :   0.0007
+ - Maximum value of error :   0.1140
+ - Mean value of error    :   0.0177
+ - Std deviation of error :   0.0219
+ - L1 norm of error :   0.1140
+ - L2 norm of error :   0.1408
+Average test error  :   0.0177
+Saving network in file /Network.txt
+
+Verification:
+x=  2.988, expected=  0.153, predicted=  0.134, error=   0.0193
+x=  2.048, expected=  0.888, predicted=  0.910, error=   0.0214
+x=  1.929, expected=  0.937, predicted=  0.944, error=   0.0076
+x=  0.270, expected=  0.267, predicted=  0.293, error=   0.0264
+x=  0.556, expected=  0.528, predicted=  0.542, error=   0.0143
+x=  2.545, expected=  0.562, predicted=  0.577, error=   0.0149
+x=  2.727, expected=  0.403, predicted=  0.397, error=   0.0057
+x=  2.199, expected=  0.809, predicted=  0.836, error=   0.0267
+x=  2.922, expected=  0.218, predicted=  0.195, error=   0.0229
+x=  2.783, expected=  0.351, predicted=  0.337, error=   0.0133
+Average error on 10 verification data: 0.017252
+
+---------------------------
+Network has 4 layers:
+Layer 0: 1 neurons
+Layer 1: 8 neurons, activation TANH, 8 weights, 8 biases
+Layer 2: 3 neurons, activation TANH, 24 weights, 3 biases
+Layer 3: 1 neurons, activation TANH, 3 weights, 1 biases
+Total number of synapses: 47 (i.e. weights + biases)
+Average L1 norm of synapses: 0.932080
+Average L2 norm of synapses: 0.630728
+Average value of synapses:   0.108299
+Standard dev. of synapses:   1.117912
+Ratio of synapses greater than 1:   46.81 %
+Ratio of synapses less than 1:      48.94 %
+Ratio of synapses less than 0.1:     2.13 %
+Ratio of synapses less than 0.01:    2.13 %
+Ratio of synapses less than 0.001:   0.00 %
+Ratio of synapses less than 0.0001:  0.00 %
+
+Final learning rate: 0.500000
+Final Sigmoid gain : 1.000000
+Final momentum     : 0.100000
+---------------------------
