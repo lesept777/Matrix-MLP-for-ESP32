@@ -2,4 +2,4 @@
 Some examples to illustrate the use of some features of the library
 
 ## Sinus
-Approximate a sine function
+Begin with this simple example: it automatically fits a sine curve
