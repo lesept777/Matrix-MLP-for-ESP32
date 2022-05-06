@@ -56,6 +56,7 @@
 #define H_GRAD_SCALE   0x20000  // for gradient scaling
 #define H_CHAN_MOLIN   0x40000  // change the momentum throughout the epochs
 #define H_DATA_SUBSE   0x80000  // begin training on a subset of the dataset
+#define H_TOPK_PRUNE  0x100000  // prune network using Top-K method
 
 // 9 activation functions
 enum ACTIVATION {
@@ -100,8 +101,8 @@ class MLP
     void setHeurChangeMomentum (bool, float = 0.1f, float = 1.5f);
     void setHeurChangeGain (bool, float = 0.5f, float = 2.0f);
     void setHeurInitialize (bool);
-    void setHeurGradScale (float);
-    void setHeurGradClip (float);
+    void setHeurGradScale (bool, float);
+    void setHeurGradClip (bool, float);
 
     // Activation functions of each layer
     void setActivations (const int *);
@@ -114,6 +115,7 @@ class MLP
     void setMomentum  (float);
     void setEta       (float);
     void setEtaRange (float, float);
+    void setMomRange  (float, float);
     void setGain      (float);
 
     int   getEpochs    ();
@@ -146,27 +148,27 @@ class MLP
     float testNet(const std::vector<std::vector<float> >, const std::vector<std::vector<float> >, const uint16_t, const uint16_t, const bool);
 
 // Weights functions
-    void randomWeights (float = -0.5f, float = 0.5f);
-    void normalize (MLMatrix<float> &, const uint8_t);
-    void deNorm (MLMatrix<float> &, const uint8_t);
-    void searchBestWeights (std::vector<std::vector<float> >, std::vector<std::vector<float> >);
-    void saveWeights ();
-    void restoreWeights ();
+    void  randomWeights (float = -0.5f, float = 0.5f);
+    void  normalize (MLMatrix<float> &, const uint8_t);
+    void  deNorm (MLMatrix<float> &, const uint8_t);
+    void  searchBestWeights (const std::vector<std::vector<float> >, const std::vector<std::vector<float> >);
+    void  saveWeights ();
+    void  restoreWeights ();
     float regulL1Weights();
     float regulL2Weights();
-    int numberOfWeights();
-    void displayWeights();
+    int   numberOfWeights();
+    void  displayWeights();
     float getWeight (int, int, int);
-    int setWeight (int, int, int, float);
-    void statWeights();
+    int   setWeight (int, int, int, float);
+    void  statWeights();
     float meanWeights();
     float stdevWeights (float);
 
 // Misc functions
-    int  size () const;
-    void displayNetwork ();
-    void netSave (const char* const);
-    bool netLoad (const char* const);
+    int   size () const;
+    void  displayNetwork ();
+    void  netSave (const char* const);
+    bool  netLoad (const char* const);
 
   private:
 
@@ -175,7 +177,6 @@ class MLP
     float _eta0      = _eta;
     float _momentum  = 0.5f;
     float _gain      = 1.0f;
-    float _anneal    = 1.0f;
     float _trainTest = 0.8f;
 
     float _currError = 100.0f;
@@ -215,10 +216,10 @@ class MLP
     uint16_t _nData, _batchSize, _lastBestEpoch = 0;
     float _stopError, _prevMinError, _validError;
     float _prevError, _firstError;
-    bool _bestEta  = false;
-    bool _firstRun = true;
+    bool _bestEta      = false;
+    bool _firstRun     = true;
     bool _datasetSplit = false;
-    bool _enSoftmax = false;
+    bool _enSoftmax    = false;
 
 // Storage vectors
     std::vector<float> _xmin;
@@ -263,18 +264,18 @@ class MLP
     MLMatrix<float> SoftMax (const MLMatrix<float>);
 
 // Private functions
-    float CrossEntropy (const MLMatrix<float>, const MLMatrix<float>);
     MLMatrix<float> Mse (MLMatrix<float>, MLMatrix<float>);
     MLMatrix<float> LogLikelihood(MLMatrix<float>);
     MLMatrix<float> activation (MLMatrix<float>, const uint8_t);
     MLMatrix<float> dActivation (MLMatrix<float>, const uint8_t);
+    MLMatrix<float> predict_nonorm (MLMatrix<float>);
 
-    void heuristics (int, int, bool);
-    void searchEta (MLMatrix<float>, MLMatrix<float>, float, std::vector<MLMatrix<float> >, std::vector<MLMatrix<float> >, std::vector<MLMatrix<float> >, std::vector<MLMatrix<float> >);
+    float CrossEntropy (const MLMatrix<float>, const MLMatrix<float>);
+    void  heuristics (int, int, bool);
+    void  searchEta (MLMatrix<float>, MLMatrix<float>, float, std::vector<MLMatrix<float> >, std::vector<MLMatrix<float> >, std::vector<MLMatrix<float> >, std::vector<MLMatrix<float> >);
     int   readIntFile (File);
     float readFloatFile (File);
-    void initWeights ();
-    MLMatrix<float> predict_nonorm (MLMatrix<float>);
+    void  initWeights ();
 
     // typedef float (MLP::*Act) (const float);
     // Act Activation[3] = {&MLP::ReLu, &MLP::Sigmoid, &MLP::Tanh};
@@ -285,14 +286,13 @@ class MLP
 
 // Booleans for the heuristics
     uint32_t _heuristics     = 131157; // default value for small code
-    bool     _initialize     = true;
+    bool     _initialize     = true;   // in default
     bool     _changeWeights  = false;
-    bool     _mutateWeights  = false;
+    bool     _mutateWeights  = false;  // in default
     bool     _changeLRlin    = false;
-    bool     _changeLRlog    = false;
-    bool     _changeMom      = false;
-    bool     _varMom         = false;
+    bool     _changeLRlog    = false;  // in default
     bool     _changeGain     = false;
+    bool     _changeMom      = false;  // in default
     bool     _shuffleDataset = false;
     bool     _zeroWeights    = false;
     bool     _stopTotalError = false;
@@ -302,8 +302,10 @@ class MLP
     bool     _regulL2        = false;
     bool     _labelSmoothing = false;
     bool     _gradClip       = false;
-    bool     _gradScaling    = false;
+    bool     _gradScaling    = false;  // in default
+    bool     _varMom         = false;
     bool     _dataSubset     = false;
+    bool     _prune_topk     = false;
 };
 
 inline float halfSquare (const float x) { return 0.5f * pow(x, 2); }

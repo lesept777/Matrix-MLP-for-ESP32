@@ -12,7 +12,6 @@
     verbose level (0= silent, 1= intermediary, 2= very talkative, 3 = even more)
     'skip' enables (true) or disables (false) to add to each layer inputs from layer l-2
 */
-// MLP::MLP(int numLayers, int units[], int verbose)
 MLP::MLP(const int *neurons, const int nLayers, const int verbose)
 {
 	_verbose = verbose;
@@ -48,6 +47,7 @@ void MLP::randomWeights (float min, float max)
 	initWeights ();
 }
 
+// Initialize weights & biases : random uniform or Xavier
 void MLP::initWeights () 
 {
 	Weights.clear();
@@ -114,6 +114,7 @@ void MLP::setCost (const uint8_t cost)
 	_cost = cost;
 }
 
+// Set the values of learning rate (called eta) and momentum
 void MLP::setHyper (const float eta, const float momentum)
 {
 	_eta = eta;
@@ -174,6 +175,7 @@ void MLP::setHeuristics (uint32_t heuristics)
     _gradScaling    = _heuristics & H_GRAD_SCALE; // 0x020000
     _varMom         = _heuristics & H_CHAN_MOLIN; // 0x040000
     _dataSubset     = _heuristics & H_DATA_SUBSE; // 0x080000
+    _prune_topk     = _heuristics & H_TOPK_PRUNE; // 0x100000
   }
 }
 
@@ -201,11 +203,13 @@ void MLP::displayHeuristics ()
   if (_labelSmoothing)  Serial.println ("- Label smoothing ON");
   if (_gradClip)        Serial.printf  ("- Gradient clipping (clip value %.3f)\n", _gradClipValue);
   if (_gradScaling)     Serial.printf  ("- Use gradient scaling (Norm to %.3f)\n", _gradScale);
+  if (_prune_topk)			Serial.println ("- TopK prining ON");
   // if (_parallelRun)     Serial.println ("- Compute using both processors");
   // if (_enableSkip)      Serial.println ("- Layer skip enabled (ResNet like)");
   Serial.println("---------------------------");
 }
 
+// Set the value of '_initialize'
 void MLP::setHeurInitialize (bool val) {
   _initialize = val;
   if (!_initialize) _selectWeights = false;
@@ -248,18 +252,27 @@ void MLP::setEtaRange (float from, float to)
 		_etaMin = to;
 	}
 }
+
+void MLP::setMomRange  (float from, float to)
+{
+	_minMom   = from;
+	_maxMom   = to;
+	_minAlpha = from;
+	_maxAlpha = to;
+}
+
+// Set the gain of Sigmoid (to change the slope at origin)
 void MLP::setGain (float gain) {
   _gain = gain;
   _gain_save = gain;
 }
 
-
+// Return values of sme hyper parameters
 int   MLP::getEpochs () 		{ return _maxEpochs; }
 int   MLP::getBatchSize () 	{ return _batchSize; }
 float MLP::getMomentum () 	{ return _momentum; }
 float MLP::getEta () 				{ return _eta; }
 float MLP::getGain () 			{ return _gain; }
-float MLP::getAnneal () 		{ return _anneal; }
 int   MLP::getNeuronNumbers (int layer)
 {
 	if (layer >= _nLayers) return 0;
@@ -295,8 +308,14 @@ void MLP::setHeurRegulL2 (bool val, float lambda) {
   _lambdaRegulL2 = lambda;
 }
 
-void MLP::setHeurGradScale (float val) { _gradScale = val; }
-void MLP::setHeurGradClip (float val) { _gradClipValue = val; }
+void MLP::setHeurGradScale (bool val, float scale) { 
+	_gradScaling   = val,
+	_gradScale     = scale; 
+}
+void MLP::setHeurGradClip (bool val, float clip) { 
+	_gradClip      = val;
+	_gradClipValue = clip; 
+}
 
 void MLP::setHeurChangeMomentum (bool val, float minAlpha, float maxAlpha) {
   _changeMom      = val;
@@ -488,7 +507,7 @@ void MLP::statWeights()
 	Serial.printf("Ratio of synapses less than 0.1:    %5.2f %%\n", 100.0f * less1 / nSynapses);
 	Serial.printf("Ratio of synapses less than 0.01:   %5.2f %%\n", 100.0f * less2 / nSynapses);
 	Serial.printf("Ratio of synapses less than 0.001:  %5.2f %%\n", 100.0f * less3 / nSynapses);
-	Serial.printf("Ratio of synapses less than 0.0001: %5.2f %%\n", 100.0f * less4 / nSynapses);
+	Serial.printf("Ratio of synapses less than 0.0001: %5.2f %% (sparsity)\n", 100.0f * less4 / nSynapses);
 }
 
 
@@ -1325,8 +1344,11 @@ float MLP::error (MLMatrix<float> y, MLMatrix<float> yhat) const
   // if (_verbose > 0) Serial.printf("Error = %f (%d %d)\n", err,idh0, idy0);
 	return err;
 }
-
-// set the hyperparameters according to the epoch number and other stuff...
+// ************************************************************************
+//
+// Set the hyperparameters according to the epoch number and other stuff...
+//
+// ************************************************************************
 void MLP::heuristics (int epoch, int maxEpochs, bool _better)
 {
 	static bool Aup = true;
@@ -1447,20 +1469,21 @@ void MLP::update (std::vector<MLMatrix<float> > &Weights, std::vector<MLMatrix<f
 		MLMatrix<float> W = Weights[k - 1];
 		MLMatrix<float> B = Biases[k - 1];
 
+// Gradient clipping
 		if (_gradClip && !_firstRun) {
 			dBiases[_nLayers - 1 - k].clipMax(_gradClipValue);
 			dWeights[_nLayers - 1 - k].clipMax(_gradClipValue);
 		}
 
+// Rescale gradient
 		if (_gradScaling && !_firstRun) {
-			bool zeroNorm;
-			dBiases[_nLayers - 1 - k] = dBiases[_nLayers - 1 - k].normScale(_gradScale, zeroNorm);
+			bool zeroNorm = dBiases[_nLayers - 1 - k].normScale2(_gradScale);
 			if (zeroNorm) Serial.printf("Warning: biases gradients are zero (layer %d)\n", k);
-			dWeights[_nLayers - 1 - k] = dWeights[_nLayers - 1 - k].normScale(_gradScale, zeroNorm);
-			if (zeroNorm)
-				Serial.printf("Warning: weights gradients are zero (layer %d)\n", k);
+			zeroNorm = dWeights[_nLayers - 1 - k].normScale2(_gradScale);
+			if (zeroNorm)	Serial.printf("Warning: weights gradients are zero (layer %d)\n", k);
 		}
 
+// Update weights
 		Biases[k - 1]  -= dBiases[_nLayers - 1 - k]  * (_eta / batchSize);
 		Weights[k - 1] -= dWeights[_nLayers - 1 - k] * (_eta / batchSize);
 		if (!_firstRun) {
@@ -1468,6 +1491,7 @@ void MLP::update (std::vector<MLMatrix<float> > &Weights, std::vector<MLMatrix<f
 			Weights[k - 1] -= dWeightsOld[_nLayers - 1 - k] * (_momentum / batchSize);
 		}
 
+// Apply regularization penalty
 		if (_regulL1)  {
 			Biases[k - 1]  -= B.sgn() * _lambdaRegulL1 * (_eta / batchSize);
 			Weights[k - 1] -= W.sgn() * _lambdaRegulL1 * (_eta / batchSize);
@@ -1477,6 +1501,7 @@ void MLP::update (std::vector<MLMatrix<float> > &Weights, std::vector<MLMatrix<f
 			Weights[k - 1] -= W * _lambdaRegulL2 * (_eta / batchSize);
 		}
 
+// Force weights to zero if lower than threshold
 		if (_zeroWeights) {
 			int nbBiasClip   = Biases[k - 1].clipToZero(_zeroThreshold);
 			int nbWeightClip = Weights[k - 1].clipToZero(_zeroThreshold);
@@ -1515,7 +1540,7 @@ void MLP::searchEta (MLMatrix<float> x, MLMatrix<float> y, float Err, std::vecto
 }
 
 // Test 30 random sets of weights and use the best one for optimization
-void MLP::searchBestWeights(std::vector<std::vector<float> > x0, std::vector<std::vector<float> > y0)
+void MLP::searchBestWeights(const std::vector<std::vector<float> > x0, const std::vector<std::vector<float> > y0)
 {
 	byte N = 30;
 	Serial.println("Searching best starting weights");
@@ -1546,7 +1571,11 @@ void MLP::searchBestWeights(std::vector<std::vector<float> > x0, std::vector<std
 	restoreWeights();
 }
 
-// Optimize the network
+// ************************************************************************
+//
+//     Optimize the network
+//
+// ************************************************************************
 void MLP::run(std::vector<std::vector<float> > x0, std::vector<std::vector<float> > y0, int maxEpochs, int batchSize, float stopError)
 {
 	Serial.printf("Batch size = %d\n",batchSize);
@@ -1625,6 +1654,7 @@ void MLP::run(std::vector<std::vector<float> > x0, std::vector<std::vector<float
 			if (_verbose > 1) Serial.printf ("Data number %d (%d)\n", data, batchSize);
 			float err;
 
+// Loop over minibatch
 			for (int d = 0; d < batchSize; ++d) {
 				for (int i = 0; i < _nInputs; ++i)  x(i, 0) = x0[data + d][i];
 				for (int c = 0; c < _nClasses; ++c) y(c, 0) = y0[data + d][c];
@@ -1672,7 +1702,7 @@ void MLP::run(std::vector<std::vector<float> > x0, std::vector<std::vector<float
 				shuffleDataset (x0, y0, 0, _nData);
 			}
 		}
-		if (_currError < stopError) break;
+		if (!_stopTotalError && _currError < stopError) break;
 		if (_stopTotalError && _currError + _validError < stopError) break;
 		++ epoch;
 		batchSize = _batchSize;
@@ -1722,8 +1752,11 @@ float MLP::testNet(const std::vector<std::vector<float> > x0, const std::vector<
 	MLMatrix<float> x(_nInputs, 1, 0);
 	MLMatrix<float> y(_nClasses, 1, 0);
 	MLMatrix<float> errGlob(number, 1, 0);
+	MLMatrix<int> Confusion(_nClasses, _nClasses, 0);
+	MLMatrix<int> Prec(_nClasses, 1, 0);
 
 	int idh0, idh1, idy0, idy1, correct = 0;
+	int nDiff = 0;
 	for (unsigned i = 0; i < number; ++i) {
 		for (unsigned j=0; j<_nInputs; ++j)  x(j,0) = x0[begin + i][j];
 		for (unsigned j=0; j<_nClasses; ++j) y(j,0) = y0[begin + i][j]; // ground truth
@@ -1734,6 +1767,17 @@ float MLP::testNet(const std::vector<std::vector<float> > x0, const std::vector<
 			y.indexMax(idy0, idy1);
 			err = abs(idh0 - idy0);
 			if (err == 0.0f) ++ correct;
+			Confusion(idy0, idh0) += 1;
+			Prec(idh0, 0) += 1;
+
+			// Compute the number of times that the difference between 
+			// the two first predictions is less than 1/_nClasses
+			float valMAx = yhat(idh0,0);
+			yhat(idh0,0) = 0.0f;
+			yhat.indexMax(idh0, idh1);
+			float diff = valMAx - yhat(idh0,0);
+			if (diff * _nClasses < 1.0f) ++ nDiff;
+
 		} else {
 			for (int c = 0; c < _nClasses; ++c) 
 				err += abs (y(c, 0) - yhat(c, 0));
@@ -1750,10 +1794,31 @@ float MLP::testNet(const std::vector<std::vector<float> > x0, const std::vector<
 		Serial.printf(" - Mean value of error    : %8.4f\n", mean);
 		Serial.printf(" - Std deviation of error : %8.4f\n", errGlob.stdev(mean));
 		// Serial.printf(" - L0 norm of error : %d\n", errGlob.L0Norm());
-		Serial.printf(" - L1 norm of error : %8.4f\n", errGlob.L1Norm());
-		Serial.printf(" - L2 norm of error : %8.4f\n", errGlob.L2Norm());
+		Serial.printf(" - L1 norm of error       : %8.4f\n", errGlob.L1Norm());
+		Serial.printf(" - L2 norm of error       : %8.4f\n", errGlob.L2Norm());
 
-		if (_enSoftmax) Serial.printf(" - Mean classification rate :%6.2f%%\n", 100.0f * correct / number);
+		if (_enSoftmax) {
+			// Print confusion matrix (rows : true value, cols : predicted value)
+			float coef = 100.0f / number;
+			Serial.print("Confusion matrix:\nTR/PR");
+			for (unsigned i=0; i<_nClasses; ++i) Serial.printf(" %4d", i);
+			Serial.println("  (Recall)");
+			for (unsigned i=0; i<_nClasses; ++i) {
+				Serial.printf ("%3d : ", i);
+				int sumI = 0;
+				for (unsigned j=0; j<_nClasses; ++j) {
+					Serial.printf ("%4d ", Confusion(i,j));
+					sumI += Confusion(i,j);
+				}
+				// Recall
+				Serial.printf (" (%5.1f%%)\n",Confusion(i,i) * 100.0f / sumI);
+			}
+			Serial.print("Prec: ");
+			for (unsigned i=0; i<_nClasses; ++i)
+				Serial.printf ("%4.0f%%", 100.0f * Confusion(i,i) / Prec(i,0));
+			Serial.println();
+			Serial.printf ("Low precision prediction : %5.1f%%\n", 100.0f * nDiff / number);
+		}
 	}
 	return error / number;
 }
