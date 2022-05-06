@@ -16,6 +16,8 @@ It can address **deep networks**, made of one input layer, multiple hidden layer
 * Many activations available
 * Can create dataset from csv file or from std::vector or arrays
 * The user can split the dataset
+* Single instruction optimization of the training phase, with options
+  * The user can also build her/his own training code
 * Many training options available:
   * Begin training on small dataset for faster training
   * Linear or logarithmic variation of the learning rate during the training phase
