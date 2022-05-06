@@ -28,6 +28,7 @@ It can address **deep networks**, made of one input layer, multiple hidden layer
   * Weights clipping to zero for sparsity
   * L1, L2 regularization available
   * Xavier initialization for weights
+  * Displays training cost and validation cost, to watch for overfitting
 * Verbose level can be set to have more or less convergence information
 * Displays network and performance information at the end:
   * Confusion matrix
