@@ -41,6 +41,19 @@ The options are:
 * H_DATA_SUBSE : begin to train on a subset of the training set (20%)
 * H_SELE_WEIGH : select best weights over 30 random sets (does not hold if H_INIT_OPTIM is selected)
 
+The parameters of the heuristics can be customized, using the following methods:
+```
+    void setHeurShuffleDataset (bool);
+    void setHeurZeroWeights (bool, float);
+    void setHeurRegulL1 (bool, float = 1.0f);
+    void setHeurRegulL2 (bool, float = 1.0f);
+    void setHeurChangeMomentum (bool, float = 0.1f, float = 1.5f);
+    void setHeurChangeGain (bool, float = 0.5f, float = 2.0f);
+    void setHeurInitialize (bool);
+    void setHeurGradScale (bool, float);
+    void setHeurGradClip (bool, float);
+```
+
 ## Transfer learning
 If the result is not satisfying, it is possible to continue the learning phase, with transfer learning. The command
 ```
@@ -58,4 +71,7 @@ This reads the network from the file and sets `initialize` to `false`. Then unco
 ```
 Net.setHeurInitialize(initialize);
 ```
-This instruction forces to `false` the flag that initializes random weights (it also prevents the 'select best weights' option). The training will then resume from the saved result.
+This line must come after `setHeuristics`. This instruction forces to `false` the flag that initializes random weights (it also prevents the 'select best weights' option). The training will then resume from the saved result.
+
+## Results
+The results are much better than the previous case, see files [Results.txt](./Results.txt) and [Results2.txt](./Results2.txt). The library now computes and displays the confusion matrix after the test phase. You can see the effetc of `H_ZERO_WEIGH`: more than 50% of the weights are zero.
