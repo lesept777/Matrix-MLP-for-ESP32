@@ -76,4 +76,4 @@ This is called 'heuristics' in the source code. It can be user set, or default. 
 * Gradient scaling is applied (scaled such as L2 norm equals 1)
 
 
-The result is shown in the file [Output.txt] (https://github.com/lesept777/Matrix-MLP-for-ESP32/blob/main/examples/MMLP_Sinus/Output.txt)
+The result is shown in the file [Output.txt](./Output.txt)
