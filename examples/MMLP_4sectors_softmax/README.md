@@ -31,3 +31,31 @@ int Activations[] = {SIGMOID, SIGMOID, SOFTMAX};
                     H_SELE_WEIGH;
   Net.setHeuristics(heuristics);
 ```
+The options are:
+* H_INIT_OPTIM : initialize with random weights
+* H_MUTA_WEIGH : slightly change the weights randomly if the cost does not decrease
+* H_CHAN_LRLOG : learning rate decreases logarithmically
+* H_CHAN_SGAIN : change SIGMOID gain (slope at origin)
+* H_GRAD_CLIP  : gradient clipping
+* H_ZERO_WEIGH : force weigths whose absolute value is less than a threshold to zero (sparsify the network)
+* H_DATA_SUBSE : begin to train on a subset of the training set (20%)
+* H_SELE_WEIGH : select best weights over 30 random sets (does not hold if H_INIT_OPTIM is selected)
+
+## Transfer learning
+If the result is not satisfying, it is possible to continue the learning phase, with transfer learning. The command
+```
+Net.netSave(networkFile);
+```
+saves the network in a file in the SPIFFS memory.
+
+It is possible to run the sketch again, read the file at the beginning and run the training from the saved data.
+
+First, uncomment the line:
+```
+bool initialize = !Net.netLoad(networkFile);
+```
+This reads the network from the file and sets `initialize` to `false`. Then uncomment the line:
+```
+Net.setHeurInitialize(initialize);
+```
+This instruction forces to `false` the flag that initializes random weights (it also prevents the 'select best weights' option). The training will then resume from the saved result.
