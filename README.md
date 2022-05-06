@@ -24,7 +24,7 @@ It can address **deep networks**, made of one input layer, multiple hidden layer
   * Gradient clipping, gradient scaling for faster convergence
   * Weights clipping to zero for sparsity
   * L1, L2 regularization available
-  * Xavier initialization ofr weights
+  * Xavier initialization for weights
 * Verbose level can be set to have more or less convergence information
 * Displays network and performance information at the end:
   * Confusion matrix
