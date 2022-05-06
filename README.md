@@ -18,7 +18,8 @@ It can address **deep networks**, made of one input layer, multiple hidden layer
 * The user can split the dataset
 * Many training options available:
   * Begin training on small dataset for faster training
-  * Learning rate linear or logarithmic evolution
+  * Linear or logarithmic variation of the learning rate during the training phase
+  * Quadratic variation of momentum during the training phase
   * Momentum and sigmoid gain can change if the cost does not decrease
   * Weights can be randomly alterred if the cost does not decrease
   * Gradient clipping, gradient scaling for faster convergence
