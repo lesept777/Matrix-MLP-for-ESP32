@@ -75,4 +75,4 @@ The dataset is split, normalized then the training phase is run:
   Net.netSave(networkFile);
 ```
 
-Results are shown in the file [Results.txt](./Results.txt)
+Results are shown in the file [Results.txt](./Results.txt). Not very good, but now you know more about heuristics. See the other [MMLP_4sectors_softmax](../MMLP_4sectors_softmax) example for better results.
