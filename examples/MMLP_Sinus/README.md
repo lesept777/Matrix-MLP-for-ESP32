@@ -85,5 +85,5 @@ Then, after some additional (optional) verification, informations and statistics
 Net.displayNetwork();
 ```
 
-The result is shown in the file [Output.txt] (https://github.com/lesept777/Matrix-MLP-for-ESP32/blob/main/examples/MMLP_Sinus/Output.txt)
+The result is shown in the file [Output.txt](./Output.txt)
 
