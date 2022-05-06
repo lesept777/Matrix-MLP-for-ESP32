@@ -4,7 +4,7 @@ This example classifies points (x,y) in the domain [0,1] x [0,1] in 4 sectors:
 
 ```
 /*    sectors:
-	 y
+      y
       |_______
       | 1 | 3 |
       | 0 | 2 |
