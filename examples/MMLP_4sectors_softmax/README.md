@@ -56,11 +56,7 @@ The parameters of the heuristics can be customized, using the following methods:
 ```
 
 ## Transfer learning
-If the result is not satisfying, it is possible to continue the learning phase, with transfer learning. The command
-```
-Net.netSave(networkFile);
-```
-saves the network in a file in the SPIFFS memory.
+If the result is not satisfying, it is possible to continue the learning phase, with transfer learning. The command `Net.netSave(networkFile)` saves the network in a file in the SPIFFS memory.
 
 It is possible to run the sketch again, read the file at the beginning and run the training from the saved data.
 
@@ -75,4 +71,4 @@ Net.setHeurInitialize(initialize);
 This line must come after `setHeuristics`. This instruction forces to `false` the flag that initializes random weights (it also prevents the 'select best weights' option). The training will then resume from the saved result.
 
 ## Results
-The results are much better than the previous case, see files [Results.txt](./Results.txt) and [Results2.txt](./Results2.txt). The library now computes and displays the confusion matrix after the test phase. You can see the effetc of `H_ZERO_WEIGH`: more than 50% of the weights are zero.
+The results are much better than the previous case, see files [Results.txt](./Results.txt) and [Results2.txt](./Results2.txt). The library now computes and displays the confusion matrix after the test phase. You can see the effect of `H_ZERO_WEIGH`: more than 50% of the weights are zero.
