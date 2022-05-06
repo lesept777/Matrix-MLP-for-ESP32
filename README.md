@@ -20,6 +20,7 @@ It can address **deep networks**, made of one input layer, multiple hidden layer
   * Begin training on small dataset for faster training
   * Learning rate linear or logarithmic evolution
   * Momentum and sigmoid gain can change if the cost does not decrease
+  * Weights can be randomly alterred if the cost does not decrease
   * Gradient clipping, gradient scaling for faster convergence
   * Weights clipping to zero for sparsity
   * L1, L2 regularization available
