@@ -26,7 +26,8 @@ Learning parameters are:
 * Activations are set to TANH
 * Training will stop when the error on the test set is lower than 0.02
 
-## Then create the dataset and put data inside. 2 possibilities are shown:
+## Then create the dataset and put data inside. 
+2 possibilities are shown:
 * Create the dataset from vectors
 * Create the dataset from arrays
 
