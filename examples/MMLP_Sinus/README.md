@@ -75,5 +75,15 @@ This is called 'heuristics' in the source code. It can be user set, or default. 
 * The value of the momentum can change randomly
 * Gradient scaling is applied (scaled such as L2 norm equals 1)
 
+## Finally, save and display
+The results is saved in txt file, for possible future use:
+```
+  Net.netSave(networkFile);
+```
+Then, after some additional (optional) verification, informations and statistics are provided:
+```
+Net.displayNetwork();
+```
 
-The result is shown in the file [Output.txt](./Output.txt)
+The result is shown in the file [Output.txt] (https://github.com/lesept777/Matrix-MLP-for-ESP32/blob/main/examples/MMLP_Sinus/Output.txt)
+
