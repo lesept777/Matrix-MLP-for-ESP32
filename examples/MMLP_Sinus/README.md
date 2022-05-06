@@ -1,7 +1,9 @@
 # Fitting a sine curve
 This example shows how to fit the sine curve, for x from -PI to +PI with automatic training.
 
-The network used here has 4 layers, with neurons {1, 8, 3, 1}. First define the network  and its hyperparameters:
+The network used here has 4 layers, with neurons {1, 8, 3, 1}. 
+
+## First define the network  and its hyperparameters:
 ```
   float eta = 0.5f; // learning rate
   float momentum = 0.1f;
@@ -24,7 +26,7 @@ Learning parameters are:
 * Activations are set to TANH
 * Training will stop when the error on the test set is lower than 0.02
 
-Then create the dataset and put data inside. 2 possibilities are shown:
+## Then create the dataset and put data inside. 2 possibilities are shown:
 * Create the dataset from vectors
 * Create the dataset from arrays
 
@@ -73,4 +75,4 @@ This is called 'heuristics' in the source code. It can be user set, or default. 
 * Gradient scaling is applied (scaled such as L2 norm equals 1)
 
 
-The result is shown in the file 
+The result is shown in the file [Output.txt] (https://github.com/lesept777/Matrix-MLP-for-ESP32/blob/main/examples/MMLP_Sinus/Output.txt)
