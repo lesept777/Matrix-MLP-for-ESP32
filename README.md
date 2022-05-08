@@ -36,3 +36,19 @@ It can address **deep networks**, made of one input layer, multiple hidden layer
   * Weights statistics
 * Can save the network's data on file for future usage (transfer learning)
 * etc.
+
+# Multilayer perceptron
+Multilayer perceptron is decribed [here](https://en.wikipedia.org/wiki/Multilayer_perceptron). This library implements both training and inference phases on a dataset. Datasets can be created in the sketch or read from a csv file. This library is not intended to work with images, only with arrays of floats.
+
+## Quick start
+If you want to test it quickly, try the ["sinus" example](./examples/MMLP_Sinus)
+
+# Guidelines
+## Declare a network
+To declare a network, just create an array of int with the number of neurons in each layer. The arguments of the constructor are: number of layers, array of neurons, verbose level.
+```
+// Declare the network
+int Neurons[] = {2, 20, 1}; // Number of neurons in each layer (from input to output)
+MLP Net(3, Neurons, 1);     // number of layers, array of neurons, verbose level
+```
+
