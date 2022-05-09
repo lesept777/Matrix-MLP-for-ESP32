@@ -72,3 +72,12 @@ This line must come after `setHeuristics`. This instruction forces to `false` th
 
 ## Results
 The results are much better than the previous case, see files [Results.txt](./Results.txt) and [Results2.txt](./Results2.txt). The library now computes and displays the confusion matrix after the test phase. You can see the effect of `H_ZERO_WEIGH`: more than 50% of the weights are zero.
+
+# Pruning
+New options (May 2022): attempts to remove the neurons that do not have an effective impact on the result.
+
+Using heuristics option `H_NEUR_PRUNE`, after the training phase, the algorithm searches the neurons which have the gighest number of zeros in the weight matrices. If the row is full of zeros, this means the neuron is inactive: it does not have any impact on the result of the network and can be removed.
+
+If the number of zeros in the weight matrix associated to a given neuron is higher than a treshold (can be set using `setHeurPruning`) this neuron is also removed.
+
+The file [Pruning.txt](./Pruning.txt) shows the result. With a threshold at 75%, 14 neurons were removed, which decreases the number of synapses (the size of the network) of 40%, with a slight decrease of the test performance.
