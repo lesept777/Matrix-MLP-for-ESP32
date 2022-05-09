@@ -19,7 +19,7 @@ It can address **deep networks**, made of one input layer, multiple hidden layer
 * Single instruction optimization of the training phase, with options
   * The user can also build her/his own training code
 * Many training options available:
-  * Begin training on small dataset for faster training
+  * Begin training on small dataset for faster training (don't use this with transfer learning)
   * Linear or logarithmic variation of the learning rate during the training phase
   * Quadratic variation of momentum during the training phase
   * Momentum and sigmoid gain can change if the cost does not decrease
