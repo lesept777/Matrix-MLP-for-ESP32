@@ -123,7 +123,7 @@ void MLP::setHyper (const float eta, const float momentum)
 	_momentum = momentum;
 
 	if (_verbose > 0)	{
-		Serial.println ("Setting hypermarameters:");
+		Serial.println ("Setting hyperparameters:");
 		Serial.printf(" - Learning rate = %f\n - Momentum      = %f\n", _eta, _momentum);
 	}
 }
@@ -176,6 +176,7 @@ void MLP::setHeuristics (uint32_t heuristics)
     _varMom         = _heuristics & H_CHAN_MOLIN; // 0x040000
     _dataSubset     = _heuristics & H_DATA_SUBSE; // 0x080000
     _prune_topk     = _heuristics & H_TOPK_PRUNE; // 0x100000
+    _prune_neurons  = _heuristics & H_NEUR_PRUNE; // 0x200000
   }
 }
 
@@ -204,6 +205,7 @@ void MLP::displayHeuristics ()
   if (_gradClip)        Serial.printf  ("- Gradient clipping (clip value %.3f)\n", _gradClipValue);
   if (_gradScaling)     Serial.printf  ("- Use gradient scaling (Norm to %.3f)\n", _gradScale);
   if (_prune_topk)			Serial.println ("- TopK prining ON");
+  if (_prune_neurons)   Serial.println ("- Prune inactive neurons at test phase");
   // if (_parallelRun)     Serial.println ("- Compute using both processors");
   // if (_enableSkip)      Serial.println ("- Layer skip enabled (ResNet like)");
   Serial.println("---------------------------");
@@ -326,6 +328,10 @@ void MLP::setHeurChangeGain (bool val, float minGain, float maxGain) {
   _changeGain    = val;
   _minGain       = minGain;
   _maxGain       = maxGain;
+}
+void MLP::setHeurPruning (bool val, float threshold){
+	_prune_neurons = val;
+	_pruningThreshold = threshold;
 }
 
 
@@ -1427,7 +1433,7 @@ void MLP::heuristics (int epoch, int maxEpochs, bool _better)
 			if (gain <= _minGain || gain >= _maxGain) Gup = !Gup;
 			if (Gup) _gain = gain + 0.15;
 			else _gain = gain - 0.15;
-			if (_verbose > 0) Serial.printf ("Heuristics: changing Sigmoid gain to %f\n", _gain);
+			if (_verbose > 0) Serial.printf ("Heuristics: changing Sigmoid gain to %.2f\n", _gain);
 		}
 	
 		// if (_bestEta) {
@@ -1632,7 +1638,7 @@ void MLP::run(std::vector<std::vector<float> > x0, std::vector<std::vector<float
 		if (_verbose > 1) Serial.printf("Epoch %d\n", epoch);
 
 		if (_dataSubset && subTrain) {
-			if (epoch > _maxEpochs / 3 || nimprove > 2) { // Back to entire dataset
+			if (epoch > _maxEpochs / 3 || nimprove > 4) { // Back to entire dataset
 				_nTrain = savenTrain;
 				_nValid = savenValid;
 				subTrain = false;
@@ -1713,6 +1719,14 @@ void MLP::run(std::vector<std::vector<float> > x0, std::vector<std::vector<float
 	// Evaluate network on test dataset
 	if (_nTest != 0) {
 		Serial.printf("\nEvaluation on test data (%d samples):\n",_nTest);
+		float testError = testNet(x0, y0, _nTrain + _nValid, _nTest, true);
+		Serial.printf("Average test error  : %8.4f\n", testError);
+	}
+
+	bool pruned = false;
+	if (_prune_neurons) pruned = pruneInactive();
+	if (pruned) {
+		Serial.printf("\nNew evaluation on test data after pruning:\n",_nTest);
 		float testError = testNet(x0, y0, _nTrain + _nValid, _nTest, true);
 		Serial.printf("Average test error  : %8.4f\n", testError);
 	}
@@ -1821,4 +1835,85 @@ float MLP::testNet(const std::vector<std::vector<float> > x0, const std::vector<
 		}
 	}
 	return error / number;
+}
+
+
+bool MLP::pruneInactive()
+{
+	Serial.println("---------------------------\nAttempting to prune the network...");
+	uint16_t before = numberOfWeights();
+	bool pruned = false;
+	// Search for neurons with all zero weights (inactive neurons)
+	Serial.println("Pruning inactive neurons");
+	int inact = 0;
+	std::vector<int> inacLayers;
+	std::vector<int> inacNeurons;
+	for (int k = 0; k < _nLayers - 2; ++k) {
+		MLMatrix<float> W(Weights[k]);
+		uint16_t n = W.get_rows();
+		uint16_t cols = W.get_cols();
+		for (unsigned i=0; i<n; ++i) {
+			uint16_t nZ = W.countZeroRow(i);
+			if (nZ == cols) {
+				Serial.printf("Layer %d : neuron %d is inactive\n", k,i);
+				inacLayers.push_back(k);
+				inacNeurons.push_back(i);
+				++inact;
+			}
+		}
+	}
+	if (inact == 0) Serial.println ("No inactive neuron found.");
+	else {
+		for (unsigned i=0; i<inacLayers.size(); ++i) {
+			uint16_t layer = inacLayers[i];
+			uint16_t neuron = inacNeurons[i] - i;
+			Weights[layer].removeRow(neuron);
+			Biases[layer].removeRow(neuron);
+			Weights[layer+1].removeCol(neuron);
+			--_neurons[layer+1];
+			if (_verbose > 1) Serial.printf("Removing neuron %d %d\n",layer,neuron);
+		}
+	}
+
+	// Search for neurons with low activity: more than 3/4 zeros in row
+	// (set this threshold with setHeurPruning)
+	Serial.println("Pruning neurons with low activity");
+	int lowact = 0;
+	inacLayers.clear();
+	inacNeurons.clear();
+	for (int k = 0; k < _nLayers - 2; ++k) {
+		MLMatrix<float> W(Weights[k]);
+		uint16_t size = W.get_cols();
+		if (size > 6) { // Do not prune thin layers
+			for (unsigned i=0; i<W.get_rows(); ++i) {
+				uint16_t n = W.countZeroRow(i);
+				if (n >= int(_pruningThreshold * size)) {
+					Serial.printf("Layer %d : neuron %d can be pruned (%d)\n", k,i,n);
+					inacLayers.push_back(k);
+					inacNeurons.push_back(i);
+					++lowact;
+				}
+			}
+		}
+	}
+	if (lowact == 0) Serial.println ("No low activity neuron found.");
+	else {
+		for (unsigned i=0; i<inacLayers.size(); ++i) {
+			uint16_t layer = inacLayers[i];
+			uint16_t neuron = inacNeurons[i] - i;
+			Weights[layer].removeRow(neuron);
+			Biases[layer].removeRow(neuron);
+			Weights[layer+1].removeCol(neuron);
+			--_neurons[layer+1];
+			if (_verbose > 1) Serial.printf("Removing neuron %d %d\n",layer,neuron);
+		}
+	}
+
+	uint16_t nPruned = inact + lowact;
+	if (nPruned > 0) {
+		Serial.printf ("Succesfully pruned %d neurons.\nNetwork now has %d synapses (-%.2f%%)\n", 
+			nPruned, numberOfWeights(),100.f - 100.0f*numberOfWeights()/before);
+		pruned = true;
+	}
+	return pruned;
 }

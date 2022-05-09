@@ -46,7 +46,7 @@
 #define H_SHUF_DATAS      0x80  // to shuffle the dataset
 #define H_ZERO_WEIGH     0x100  // to force low weights to 0
 #define H_STOP_TOTER     0x200  // stop optimization if test + train Error < threshold 
-#define H_SELE_WEIGH     0x400  // select best weights over 10 random sets
+#define H_SELE_WEIGH     0x400  // select best weights over 30 random sets
 #define H_INIT_XAVIE     0x800  // init weights with Xavier method
 #define H_REG1_WEIGH    0x1000  // use L1 weight regularization
 #define H_REG2_WEIGH    0x2000  // use L2 weight regularization
@@ -57,6 +57,7 @@
 #define H_CHAN_MOLIN   0x40000  // change the momentum throughout the epochs
 #define H_DATA_SUBSE   0x80000  // begin training on a subset of the dataset
 #define H_TOPK_PRUNE  0x100000  // prune network using Top-K method
+#define H_NEUR_PRUNE  0x200000  // prune inactive neurons 
 
 // 9 activation functions
 enum ACTIVATION {
@@ -103,6 +104,7 @@ class MLP
     void setHeurInitialize (bool);
     void setHeurGradScale (bool, float);
     void setHeurGradClip (bool, float);
+    void setHeurPruning (bool, float);
 
     // Activation functions of each layer
     void setActivations (const int *);
@@ -123,7 +125,6 @@ class MLP
     float getMomentum  ();
     float getEta       ();
     float getGain      ();
-    float getAnneal    ();
     int   getNeuronNumbers (int);
 
 // Dataset functions
@@ -170,6 +171,9 @@ class MLP
     void  netSave (const char* const);
     bool  netLoad (const char* const);
 
+// Pruning
+    bool  pruneInactive();
+
   private:
 
 // Initial values of parameters
@@ -198,6 +202,7 @@ class MLP
     float _gradScale      = 1.0f;
     float _gradClipValue  = 0.75f;
     float _zeroThreshold  = 0.15f;
+    float _pruningThreshold = 0.75f;
 
     float rTrain = 4.0f / 6.0f;
     float rValid = 1.0f / 6.0f;
@@ -306,6 +311,7 @@ class MLP
     bool     _varMom         = false;
     bool     _dataSubset     = false;
     bool     _prune_topk     = false;
+    bool     _prune_neurons  = false;
 };
 
 inline float halfSquare (const float x) { return 0.5f * pow(x, 2); }
