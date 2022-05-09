@@ -49,6 +49,6 @@ To declare a network, just create an array of int with the number of neurons in 
 ```
 // Declare the network
 int Neurons[] = {2, 20, 1}; // Number of neurons in each layer (from input to output)
-MLP Net(3, Neurons, 1);     // number of layers, array of neurons, verbose level
+MLP Net(Neurons, 3, 1);     // number of layers, array of neurons, verbose level
 ```
 
