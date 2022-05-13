@@ -71,7 +71,6 @@ Another example is provided: [Results2.txt](./Results2.txt). We add:
 before the line
 ```
   Net.displayHeuristics();
-
 ```
 to change the thresholds. 7 neurons are pruned in the first phase. The confusion matrix is:
 ```
