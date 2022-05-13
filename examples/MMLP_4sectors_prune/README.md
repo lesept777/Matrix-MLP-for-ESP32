@@ -111,4 +111,4 @@ and setting the threahold of low activity neurons to 100% to cancel its action:
 ```
     Net.setHeurPruning(true, 1.0);
 ```
-The avearage test error is now back to 4% and the validation score to 95%. The network has still more than 60% weights equal to 0.
+The average test error is now back to 4% and the validation score to 95%. The network has still more than 60% weights equal to 0.
