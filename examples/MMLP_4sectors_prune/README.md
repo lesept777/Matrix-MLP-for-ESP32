@@ -92,14 +92,14 @@ Prec:   76%  77% 100%  71%
 ```
 with an average test error jumping from 12% to 38% on 50 samples. However, the validation on unknown data remains at 90%. This shows the importance of the value of the threshold for low activity neurons pruning.
 
-However, running again with transfer learning from the saved network enables to reach a better score: 0.045 and the following confusion matrix:
+However, running again with transfer learning from the saved network enables to reach a better score: 0.06 and the following confusion matrix:
 ```
 TR/PR    0    1    2    3  (Recall)
-  0 :   15    0    0    0  (100.0%)
-  1 :    2   10    0    1  ( 76.9%)
-  2 :    0    0    9    0  (100.0%)
-  3 :    0    0    0   13  (100.0%)
-Prec:   88% 100% 100%  93% 
+  0 :   16    0    0    0  (100.0%)
+  1 :    0   11    0    0  (100.0%)
+  2 :    0    0   11    2  ( 84.6%)
+  3 :    0    0    0   10  (100.0%)
+Prec:  100% 100% 100%  83%  96.0%
 ```
 This is done by uncommenting the following lines in the ino file:
 ```
@@ -111,3 +111,4 @@ and setting the threahold of low activity neurons to 100% to cancel its action:
 ```
     Net.setHeurPruning(true, 1.0);
 ```
+The avearage test error is now back to 4% and the validation score to 95%. The network has still more than 60% weights equal to 0.
