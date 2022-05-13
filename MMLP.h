@@ -57,7 +57,8 @@
 #define H_CHAN_MOLIN   0x40000  // change the momentum throughout the epochs
 #define H_DATA_SUBSE   0x80000  // begin training on a subset of the dataset
 #define H_TOPK_PRUNE  0x100000  // prune network using Top-K method
-#define H_NEUR_PRUNE  0x200000  // prune inactive neurons 
+#define H_TEST_PRUNE  0x200000  // prune inactive or low activity neurons at test phase
+#define H_TRAI_PRUNE  0x400000  // prune inactive neurons during training
 
 // 9 activation functions
 enum ACTIVATION {
@@ -144,8 +145,10 @@ class MLP
 // Perceptron functions
     MLMatrix<float> forward (MLMatrix<float>, bool = true);
     float error (MLMatrix<float>, MLMatrix<float>) const;
-    void  backward (std::vector<MLMatrix<float> > &, std::vector<MLMatrix<float> > &, const MLMatrix<float>, const MLMatrix<float>, const int);
-    void  update (std::vector<MLMatrix<float> > &, std::vector<MLMatrix<float> >, std::vector<MLMatrix<float> >, std::vector<MLMatrix<float> > &, std::vector<MLMatrix<float> >, std::vector<MLMatrix<float> >, const int);
+    // void  backward (std::vector<MLMatrix<float> > &, std::vector<MLMatrix<float> > &, const MLMatrix<float>, const MLMatrix<float>, const int);
+    // void  update (std::vector<MLMatrix<float> > &, std::vector<MLMatrix<float> >, std::vector<MLMatrix<float> >, std::vector<MLMatrix<float> > &, std::vector<MLMatrix<float> >, std::vector<MLMatrix<float> >, const int);
+    void  backward (const MLMatrix<float>, const MLMatrix<float>, const int);
+    void  update (const int);
     float testNet(const std::vector<std::vector<float> >, const std::vector<std::vector<float> >, const uint16_t, const uint16_t, const bool);
 
 // Weights functions
@@ -172,7 +175,10 @@ class MLP
     bool  netLoad (const char* const);
 
 // Pruning
-    bool  pruneInactive();
+    bool     pruneAll();
+    uint16_t pruneInactive();
+    uint16_t pruneLowAct();
+    void     removeNeuron (int, int);
 
   private:
 
@@ -202,7 +208,7 @@ class MLP
     float _gradScale      = 1.0f;
     float _gradClipValue  = 0.75f;
     float _zeroThreshold  = 0.15f;
-    float _pruningThreshold = 0.75f;
+    float _pruningThreshold = 0.85f;
 
     float rTrain = 4.0f / 6.0f;
     float rValid = 1.0f / 6.0f;
@@ -239,6 +245,10 @@ class MLP
 // Network parameters (weights)
     std::vector<MLMatrix<float> > Weights;
     std::vector<MLMatrix<float> > Biases;
+    std::vector<MLMatrix<float> > dWeights;
+    std::vector<MLMatrix<float> > dBiases;
+    std::vector<MLMatrix<float> > dWeightsOld;
+    std::vector<MLMatrix<float> > dBiasesOld;
     std::vector<MLMatrix<float> > _a;
     // std::vector<MLMatrix<float> > _z;
 
@@ -277,7 +287,8 @@ class MLP
 
     float CrossEntropy (const MLMatrix<float>, const MLMatrix<float>);
     void  heuristics (int, int, bool);
-    void  searchEta (MLMatrix<float>, MLMatrix<float>, float, std::vector<MLMatrix<float> >, std::vector<MLMatrix<float> >, std::vector<MLMatrix<float> >, std::vector<MLMatrix<float> >);
+    // void  searchEta (MLMatrix<float>, MLMatrix<float>, float, std::vector<MLMatrix<float> >, std::vector<MLMatrix<float> >, std::vector<MLMatrix<float> >, std::vector<MLMatrix<float> >);
+    void  searchEta (MLMatrix<float>, MLMatrix<float>, float);
     int   readIntFile (File);
     float readFloatFile (File);
     void  initWeights ();
@@ -312,6 +323,7 @@ class MLP
     bool     _dataSubset     = false;
     bool     _prune_topk     = false;
     bool     _prune_neurons  = false;
+    bool     _prune_train    = false;
 };
 
 inline float halfSquare (const float x) { return 0.5f * pow(x, 2); }

@@ -176,7 +176,8 @@ void MLP::setHeuristics (uint32_t heuristics)
     _varMom         = _heuristics & H_CHAN_MOLIN; // 0x040000
     _dataSubset     = _heuristics & H_DATA_SUBSE; // 0x080000
     _prune_topk     = _heuristics & H_TOPK_PRUNE; // 0x100000
-    _prune_neurons  = _heuristics & H_NEUR_PRUNE; // 0x200000
+    _prune_neurons  = _heuristics & H_TEST_PRUNE; // 0x200000
+    _prune_train    = _heuristics & H_TRAI_PRUNE; // 0x400000
   }
 }
 
@@ -196,7 +197,7 @@ void MLP::displayHeuristics ()
   if (_changeGain)      Serial.println ("- Random variable Sigmoid gain");
   if (_changeMom)       Serial.println ("- Random variable momentum");
   if (_varMom)          Serial.println ("- Quadratic variable momentum");
-  if (_zeroWeights)     Serial.printf  ("- Force weights less than %.4f to zero\n", _zeroThreshold);
+  if (_zeroWeights)     Serial.printf  ("- Force weights less than %.3f to zero\n", _zeroThreshold);
   if (_stopTotalError)  Serial.println ("- Stop optimization if train + validation errors under threshold");
   if (_regulL1)         Serial.printf  ("- Use L1 weight regularization (lambda = %.2f)\n", _lambdaRegulL1);
   if (_regulL2)         Serial.printf  ("- Use L2 weight regularization (lambda = %.2f)\n", _lambdaRegulL2);
@@ -205,7 +206,9 @@ void MLP::displayHeuristics ()
   if (_gradClip)        Serial.printf  ("- Gradient clipping (clip value %.3f)\n", _gradClipValue);
   if (_gradScaling)     Serial.printf  ("- Use gradient scaling (Norm to %.3f)\n", _gradScale);
   if (_prune_topk)			Serial.println ("- TopK prining ON");
-  if (_prune_neurons)   Serial.println ("- Prune inactive neurons at test phase");
+  if (_prune_train)     _prune_neurons = true;
+  if (_prune_train)     Serial.println ("- Prune inactive neurons during training phase");
+  if (_prune_neurons)   Serial.println ("- Prune inactive or low activity neurons at test phase");
   // if (_parallelRun)     Serial.println ("- Compute using both processors");
   // if (_enableSkip)      Serial.println ("- Layer skip enabled (ResNet like)");
   Serial.println("---------------------------");
@@ -690,18 +693,22 @@ uint32_t MLP::estimateDuration (int maxEpochs)
 
 	MLMatrix<float> x(_nInputs, 1, 0.0f);  // Input array
 	MLMatrix<float> y(_nClasses, 1, 0.0f); // ground truth
-	std::vector<MLMatrix<float> > dWeights;
-	std::vector<MLMatrix<float> > dBiases;
+	// std::vector<MLMatrix<float> > dWeights;
+	// std::vector<MLMatrix<float> > dBiases;
 	// Forward pass
 	MLMatrix<float> yhat = forward (x, false);
 	// Compute error
 	float err = error (y, yhat);
 	// Backward pass
-	backward (dWeights, dBiases, yhat, y, 0);
+	// backward (dWeights, dBiases, yhat, y, 0);
+	backward (yhat, y, 0);
 	// Update weights
-	std::vector<MLMatrix<float> > dWeightsOld = dWeights;
-	std::vector<MLMatrix<float> > dBiasesOld = Biases;
-	update (Weights, dWeights, dWeightsOld, Biases, dBiases, dBiasesOld, _batchSize);
+	// std::vector<MLMatrix<float> > dWeightsOld = dWeights;
+	// std::vector<MLMatrix<float> > dBiasesOld = Biases;
+	// update (Weights, dWeights, dWeightsOld, Biases, dBiases, dBiasesOld, _batchSize);
+	dWeightsOld = dWeights;
+	dBiasesOld = Biases;
+	update (_batchSize);
 
   chrono = millis() - chrono;
   restoreWeights();
@@ -1444,7 +1451,8 @@ void MLP::heuristics (int epoch, int maxEpochs, bool _better)
 	}
 }
 
-void MLP::backward (std::vector<MLMatrix<float> > &dWeights, std::vector<MLMatrix<float> > &dBiases, const MLMatrix<float> yhat, const MLMatrix<float> y, const int d)
+// void MLP::backward (std::vector<MLMatrix<float> > &dWeights, std::vector<MLMatrix<float> > &dBiases, const MLMatrix<float> yhat, const MLMatrix<float> y, const int d)
+void MLP::backward (const MLMatrix<float> yhat, const MLMatrix<float> y, const int d)
 {
 	if (_verbose > 1) Serial.println("Backward...");
 	MLMatrix<float> delta;
@@ -1468,8 +1476,9 @@ void MLP::backward (std::vector<MLMatrix<float> > &dWeights, std::vector<MLMatri
   }
 }
 
-void MLP::update (std::vector<MLMatrix<float> > &Weights, std::vector<MLMatrix<float> > dWeights, std::vector<MLMatrix<float> > dWeightsOld, 
-	std::vector<MLMatrix<float> > &Biases, std::vector<MLMatrix<float> > dBiases, std::vector<MLMatrix<float> > dBiasesOld, const int batchSize)
+// void MLP::update (std::vector<MLMatrix<float> > &Weights, std::vector<MLMatrix<float> > dWeights, std::vector<MLMatrix<float> > dWeightsOld, 
+// 	std::vector<MLMatrix<float> > &Biases, std::vector<MLMatrix<float> > dBiases, std::vector<MLMatrix<float> > dBiasesOld, const int batchSize)
+void MLP::update (const int batchSize)
 {
 	for (int k = _nLayers - 1; k > 0; --k) {
 		MLMatrix<float> W = Weights[k - 1];
@@ -1518,7 +1527,8 @@ void MLP::update (std::vector<MLMatrix<float> > &Weights, std::vector<MLMatrix<f
 	_firstRun = false;
 }
 
-void MLP::searchEta (MLMatrix<float> x, MLMatrix<float> y, float Err, std::vector<MLMatrix<float> > dWeights, std::vector<MLMatrix<float> > dBiases, std::vector<MLMatrix<float> > dWeightsOld, std::vector<MLMatrix<float> > dBiasesOld)
+// void MLP::searchEta (MLMatrix<float> x, MLMatrix<float> y, float Err, std::vector<MLMatrix<float> > dWeights, std::vector<MLMatrix<float> > dBiases, std::vector<MLMatrix<float> > dWeightsOld, std::vector<MLMatrix<float> > dBiasesOld)
+void MLP::searchEta (MLMatrix<float> x, MLMatrix<float> y, float Err)
 {
 	MLMatrix<float> x0 = x;
 	_eta = _eta0;
@@ -1526,7 +1536,8 @@ void MLP::searchEta (MLMatrix<float> x, MLMatrix<float> y, float Err, std::vecto
 	float err;
 	while (_eta > _etaMin) {
 		_firstRun = true;
-		update (Weights, dWeights, dWeightsOld, Biases, dBiases, dBiasesOld, _batchSize);
+		// update (Weights, dWeights, dWeightsOld, Biases, dBiases, dBiasesOld, _batchSize);
+		update (_batchSize);
 		MLMatrix<float> yhat = forward (x, true);
 		x = x0;
 		err = error (y, yhat);
@@ -1534,7 +1545,8 @@ void MLP::searchEta (MLMatrix<float> x, MLMatrix<float> y, float Err, std::vecto
 		while (err < prevErr && err > _minError * 0.75f) {
 			prevErr = err;
 			_firstRun = true;
-			update (Weights, dWeights, dWeightsOld, Biases, dBiases, dBiasesOld, _batchSize);
+			// update (Weights, dWeights, dWeightsOld, Biases, dBiases, dBiasesOld, _batchSize);
+			update (_batchSize);
 			yhat = forward (x, true);
 			err = error (y, yhat);
 			x = x0;
@@ -1620,16 +1632,17 @@ void MLP::run(std::vector<std::vector<float> > x0, std::vector<std::vector<float
 	Serial.printf("Estimated maximum duration : %.2f s for %d epochs\n", duration/1000.0f, maxEpochs);
 	MLMatrix<float> x(_nInputs, 1, 0.0f);  // Input array
 	MLMatrix<float> y(_nClasses, 1, 0.0f); // Ground truth
-	std::vector<MLMatrix<float> > dWeightsOld;
-	std::vector<MLMatrix<float> > dBiasesOld;
-	std::vector<MLMatrix<float> > dWeights;
-	std::vector<MLMatrix<float> > dBiases;
+	// std::vector<MLMatrix<float> > dWeightsOld;
+	// std::vector<MLMatrix<float> > dBiasesOld;
+	// std::vector<MLMatrix<float> > dWeights;
+	// std::vector<MLMatrix<float> > dBiases;
 	bool _better = false;
 	_batchSize = batchSize;
 	if (_batchSize >= _nTrain) _batchSize = max(1, _nTrain / 5);
 	_stopError = stopError;
 	_firstRun = true;
 	_maxEpochs = maxEpochs;
+	byte pruneEpochs = 0;
 
 	// Epochs loop...
 	int epoch = 1;
@@ -1675,11 +1688,14 @@ void MLP::run(std::vector<std::vector<float> > x0, std::vector<std::vector<float
 				err = error (y, yhat);
 				totalError += err;
 // Backward pass
-				backward (dWeights, dBiases, yhat, y, d);
+				// backward (dWeights, dBiases, yhat, y, d);
+				backward (yhat, y, d);
 			} // end batch
 // Update weights
-			if (_bestEta) searchEta (x, y, err, dWeights, dBiases, dWeightsOld, dBiasesOld);
-			else update (Weights, dWeights, dWeightsOld, Biases, dBiases, dBiasesOld, batchSize);
+			// if (_bestEta) searchEta (x, y, err, dWeights, dBiases, dWeightsOld, dBiasesOld);
+			// else update (Weights, dWeights, dWeightsOld, Biases, dBiases, dBiasesOld, batchSize);
+			if (_bestEta) searchEta (x, y, err);
+			else update (batchSize);
 			data += batchSize;
 			if (_nData - data < batchSize) batchSize = _nData - data;
 		} // end data
@@ -1712,6 +1728,23 @@ void MLP::run(std::vector<std::vector<float> > x0, std::vector<std::vector<float
 		if (_stopTotalError && _currError + _validError < stopError) break;
 		++ epoch;
 		batchSize = _batchSize;
+
+		// Prune inactive neurons
+		if (_prune_train) {
+			// First prune phase : error < 6 * _stopError
+			if (pruneEpochs == 0 && _currError < 4 * _stopError) {
+				++pruneEpochs;
+				pruneInactive();
+				size();
+			}
+			// Second prune phase : error < 3 * _stopError
+			if (pruneEpochs == 1 && _currError < 2 * _stopError) {
+				++pruneEpochs;
+				pruneInactive();
+				size();
+			}
+		}
+
 	} // end epochs
 	Serial.printf("\nTimer : %.2f s\n", (millis() - chrono) / 1000.0f);
 	restoreWeights();
@@ -1723,8 +1756,9 @@ void MLP::run(std::vector<std::vector<float> > x0, std::vector<std::vector<float
 		Serial.printf("Average test error  : %8.4f\n", testError);
 	}
 
+	// Prune network at the end (then re-run test)
 	bool pruned = false;
-	if (_prune_neurons) pruned = pruneInactive();
+	if (_prune_neurons) pruned = pruneAll();
 	if (pruned) {
 		Serial.printf("\nNew evaluation on test data after pruning:\n",_nTest);
 		float testError = testNet(x0, y0, _nTrain + _nValid, _nTest, true);
@@ -1837,12 +1871,8 @@ float MLP::testNet(const std::vector<std::vector<float> > x0, const std::vector<
 	return error / number;
 }
 
-
-bool MLP::pruneInactive()
+uint16_t MLP::pruneInactive()
 {
-	Serial.println("---------------------------\nAttempting to prune the network...");
-	uint16_t before = numberOfWeights();
-	bool pruned = false;
 	// Search for neurons with all zero weights (inactive neurons)
 	Serial.println("Pruning inactive neurons");
 	int inact = 0;
@@ -1855,7 +1885,7 @@ bool MLP::pruneInactive()
 		for (unsigned i=0; i<n; ++i) {
 			uint16_t nZ = W.countZeroRow(i);
 			if (nZ == cols) {
-				Serial.printf("Layer %d : neuron %d is inactive\n", k,i);
+				Serial.printf("Layer %d : neuron %d is inactive\n", k+1,i);
 				inacLayers.push_back(k);
 				inacNeurons.push_back(i);
 				++inact;
@@ -1867,20 +1897,26 @@ bool MLP::pruneInactive()
 		for (unsigned i=0; i<inacLayers.size(); ++i) {
 			uint16_t layer = inacLayers[i];
 			uint16_t neuron = inacNeurons[i] - i;
-			Weights[layer].removeRow(neuron);
-			Biases[layer].removeRow(neuron);
-			Weights[layer+1].removeCol(neuron);
-			--_neurons[layer+1];
-			if (_verbose > 1) Serial.printf("Removing neuron %d %d\n",layer,neuron);
+			if (_verbose > 1) Serial.printf("Removing neuron %d of layer %d\n",neuron,layer + 1);
+			removeNeuron(layer + 1, neuron);
+			// Weights[layer].removeRow(neuron);
+			// Biases[layer].removeRow(neuron);
+			// Weights[layer+1].removeCol(neuron);
+			// --_neurons[layer+1];
 		}
+		if (_verbose > 0) Serial.printf("Succesfully pruned %d neurons\n",inact);
 	}
+	return inact;
+}
 
+uint16_t MLP::pruneLowAct()
+{
 	// Search for neurons with low activity: more than 3/4 zeros in row
 	// (set this threshold with setHeurPruning)
 	Serial.println("Pruning neurons with low activity");
 	int lowact = 0;
-	inacLayers.clear();
-	inacNeurons.clear();
+	std::vector<int> lowacLayers;
+	std::vector<int> lowacNeurons;
 	for (int k = 0; k < _nLayers - 2; ++k) {
 		MLMatrix<float> W(Weights[k]);
 		uint16_t size = W.get_cols();
@@ -1888,9 +1924,9 @@ bool MLP::pruneInactive()
 			for (unsigned i=0; i<W.get_rows(); ++i) {
 				uint16_t n = W.countZeroRow(i);
 				if (n >= int(_pruningThreshold * size)) {
-					Serial.printf("Layer %d : neuron %d can be pruned (%d)\n", k,i,n);
-					inacLayers.push_back(k);
-					inacNeurons.push_back(i);
+					Serial.printf("Layer %d : neuron %d can be pruned (%d)\n", k+1,i,n);
+					lowacLayers.push_back(k);
+					lowacNeurons.push_back(i);
 					++lowact;
 				}
 			}
@@ -1898,22 +1934,55 @@ bool MLP::pruneInactive()
 	}
 	if (lowact == 0) Serial.println ("No low activity neuron found.");
 	else {
-		for (unsigned i=0; i<inacLayers.size(); ++i) {
-			uint16_t layer = inacLayers[i];
-			uint16_t neuron = inacNeurons[i] - i;
-			Weights[layer].removeRow(neuron);
-			Biases[layer].removeRow(neuron);
-			Weights[layer+1].removeCol(neuron);
-			--_neurons[layer+1];
-			if (_verbose > 1) Serial.printf("Removing neuron %d %d\n",layer,neuron);
+		for (unsigned i=0; i<lowacLayers.size(); ++i) {
+			uint16_t layer = lowacLayers[i];
+			uint16_t neuron = lowacNeurons[i] - i;
+			removeNeuron(layer + 1, neuron);
+			// Weights[layer].removeRow(neuron);
+			// Biases[layer].removeRow(neuron);
+			// Weights[layer+1].removeCol(neuron);
+			// --_neurons[layer+1];
+			if (_verbose > 1) Serial.printf("Removing neuron %d of layer %d\n",neuron,layer+1);
 		}
 	}
+	return lowact;
+}
 
+bool MLP::pruneAll()
+{
+	Serial.println("---------------------------\nAttempting to prune the network...");
+	uint16_t before = numberOfWeights();
+	bool pruned = false;
+	uint16_t inact = pruneInactive();
+	uint16_t lowact = pruneLowAct();
 	uint16_t nPruned = inact + lowact;
 	if (nPruned > 0) {
+		float percent = 100.0f - 100.0f * numberOfWeights() / before;
 		Serial.printf ("Succesfully pruned %d neurons.\nNetwork now has %d synapses (-%.2f%%)\n", 
-			nPruned, numberOfWeights(),100.f - 100.0f*numberOfWeights()/before);
+			nPruned, numberOfWeights(), percent);
 		pruned = true;
 	}
 	return pruned;
+}
+
+void MLP::removeNeuron (int layer, int number)
+{
+	if (layer == 0) {
+		Serial.println("Prune error: cannot prune input layer !");
+		return;
+	}
+	if (layer == _nLayers - 1) {
+		Serial.println("Prune error: cannot prune output layer !");
+		return;
+	}
+	Weights[layer - 1].removeRow(number);
+	Biases[layer - 1].removeRow(number);
+	Weights[layer].removeCol(number);
+	dWeights[_nLayers - layer - 1].removeRow(number);
+	dBiases[_nLayers - layer - 1].removeRow(number);
+	dWeights[_nLayers - layer - 2].removeCol(number);
+	dWeightsOld[_nLayers - layer - 1].removeRow(number);
+	dBiasesOld[_nLayers - layer - 1].removeRow(number);
+	dWeightsOld[_nLayers - layer - 2].removeCol(number);
+	--_neurons[layer];
 }
