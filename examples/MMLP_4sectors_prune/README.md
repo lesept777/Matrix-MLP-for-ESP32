@@ -16,7 +16,7 @@ Two kinds of pruning are implemented for now:
 * Remove low activity neurons. Low activity neurons are neurons with more than a given number of weights equal to zero. The threshold's value is set using the `setHeurPruning` method.
 
 ```
-net.setHeurPruning(true, threshold);
+Net.setHeurPruning(true, threshold);
 ```
 
 The default value is 0.85, meaning that if a neuron has more than 85% of the weights in its row in the matrix that are equal to zero, it is a low activity neuron. `true` is set to enable the pruning (`false` will disable if necessary).
@@ -24,7 +24,7 @@ The default value is 0.85, meaning that if a neuron has more than 85% of the wei
 Pruning works better with the `H_ZERO_WEIGH` heuristics option, which forces weights of absolute value under a given threshold to zero. The threshold can be set using the `setHeurZeroWeights`method:
 
 ```
-net.setHeurZeroWeights(true, threshold);
+Net.setHeurZeroWeights(true, threshold);
 ```
 
 Default value is 0.15: if during the training a weight has an absolute value lower than the threshold, it is forced to 0.
