@@ -81,7 +81,7 @@ TR/PR    0    1    2    3  (Recall)
   3 :    0    1    0   14  ( 93.3%)
 Prec:   93%  91% 100%  88%
 ```
-Then comes the pruning at test phase: 3 low activity neurons are pruned in the second hidden layer, leading to a network with 549 synapses. The results are worse:
+Then comes the pruning at test phase: 3 low activity neurons are pruned in the second hidden layer, leading to a network with 549 synapses (-30%). The results are worse:
 ```
 TR/PR    0    1    2    3  (Recall)
   0 :   13    0    0    0  (100.0%)
