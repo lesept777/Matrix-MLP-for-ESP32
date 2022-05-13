@@ -61,4 +61,34 @@ The initial network has 794 total weights and biases (synapses), with 2 hidden l
 
 The training stops before the score can reach 0.08 for a second pruning phase.
 
-The confusion matrix is printed, then the test-phase pruning is run, but no inactive or low activity neurons are found. So the network stays at 656 synapses. The validation on unlnown data shows 100% performance. There are still more than 56% synpases that are equal to 0.
+The confusion matrix is printed, then the test-phase pruning is run, but no inactive or low activity neurons are found. So the network stays at 656 synapses. The validation on unknown data shows 100% performance. There are still more than 56% synapses that are equal to 0.
+
+Another example is provided: [Results2.txt](./Results2.txt). We add:
+```
+  Net.setHeurZeroWeights(true, 0.20);
+  Net.setHeurPruning(true, 0.80);
+```
+before the line
+```
+  Net.displayHeuristics();
+
+```
+to change the thresholds. 7 neurons are pruned in the first phase. The confusion matrix is:
+```
+TR/PR    0    1    2    3  (Recall)
+  0 :   13    0    0    0  (100.0%)
+  1 :    0   10    0    0  (100.0%)
+  2 :    1    0    9    2  ( 75.0%)
+  3 :    0    1    0   14  ( 93.3%)
+Prec:   93%  91% 100%  88%
+```
+Then comes the pruning at test phase: 3 low activity neurons are pruned in the second hidden layer, leading to a network with 549 synapses. The results are worse:
+```
+TR/PR    0    1    2    3  (Recall)
+  0 :   13    0    0    0  (100.0%)
+  1 :    0   10    0    0  (100.0%)
+  2 :    4    0    3    5  ( 25.0%)
+  3 :    0    3    0   12  ( 80.0%)
+Prec:   76%  77% 100%  71%
+```
+with an average test error jumping from 12% to 38% on 50 samples. However, the validation on unknown data remains at 90%.
