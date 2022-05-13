@@ -26,6 +26,7 @@ It can address **deep networks**, made of one input layer, multiple hidden layer
   * Weights can be randomly alterred if the cost does not decrease
   * Gradient clipping, gradient scaling for faster convergence
   * Weights clipping to zero for sparsity
+  * Network pruning for lower memory size
   * L1, L2 regularization available
   * Xavier initialization for weights
   * Displays training cost and validation cost, to watch for overfitting
