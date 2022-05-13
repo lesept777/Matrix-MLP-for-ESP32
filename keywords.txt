@@ -22,23 +22,28 @@ netLoad	KEYWORD2
 netSave	KEYWORD2
 readCsvFromSpiffs	KEYWORD2
 createDataset	KEYWORD2
+createDatasetFromArray	KEYWORD2
+createDatasetFromVector	KEYWORD2
 destroyDataset	KEYWORD2
 shuffleDataset	KEYWORD2
+normalizeDataset	KEYWORD2
 displayNetwork	KEYWORD2
 setMaxError	KEYWORD2
 
 setVerbose		KEYWORD2
 setEpochs		KEYWORD2
 setBatchSize		KEYWORD2
-setAlpha		KEYWORD2
+setMomentum		KEYWORD2
+setMomRange		KEYWORD2
 setEta		KEYWORD2
+setEtaRange		KEYWORD2
 setGain		KEYWORD2
 setAnneal		KEYWORD2
 setActivations		KEYWORD2
 
 getEpochs		KEYWORD2
 getBatchSize		KEYWORD2
-getAlpha		KEYWORD2
+getMomentum		KEYWORD2
 getEta		KEYWORD2
 getGain		KEYWORD2
 getAnneal		KEYWORD2
@@ -47,12 +52,16 @@ getWeight		KEYWORD2
 setWeight		KEYWORD2
 getMomentum		KEYWORD2
 
+setHyper	KEYWORD2
+setTrainTest	KEYWORD2
+
 setHeuristics	KEYWORD2
 setHeurInitialize	KEYWORD2
 setHeurChangeWeights	KEYWORD2
 setHeurMutateWeights	KEYWORD2
 setHeurChangeBatch	KEYWORD2
 setHeurChangeEta	KEYWORD2
+setHeurChangeMomentum	KEYWORD2
 setHeurChangeGain	KEYWORD2
 setHeurChangeAlpha	KEYWORD2
 setHeurShuffleDataset	KEYWORD2
@@ -61,13 +70,18 @@ setHeurTotalError	KEYWORD2
 setHeurSelectWeights	KEYWORD2
 setHeurRegulL1	KEYWORD2
 setHeurRegulL2	KEYWORD2
+setHeurGradScale	KEYWORD2
+setHeurGradClip	KEYWORD2
+setHeurPruning	KEYWORD2
 displayHeuristics	KEYWORD2
 searchBestWeights	KEYWORD2
+
 testNet	KEYWORD2
 predict	KEYWORD2
 predict_nonorm	KEYWORD2
 
 estimateDuration	KEYWORD2
+run	KEYWORD2
 forward	KEYWORD2
 error	KEYWORD2
 backward	KEYWORD2
@@ -76,6 +90,26 @@ initWeights	KEYWORD2
 saveWeights	KEYWORD2
 restoreWeights	KEYWORD2
 weightMutation	KEYWORD2
+randomWeights	KEYWORD2
+normalize	KEYWORD2
+deNorm	KEYWORD2
+regulL1Weights	KEYWORD2
+regulL2Weights	KEYWORD2
+numberOfWeights	KEYWORD2
+displayWeights	KEYWORD2
+getWeight	KEYWORD2
+setWeight	KEYWORD2
+
+pruneAll	KEYWORD2
+pruneInactive	KEYWORD2
+pruneLowAct	KEYWORD2
+removeNeuron	KEYWORD2
+
+statWeights	KEYWORD2
+meanWeights	KEYWORD2
+stdevWeights	KEYWORD2
+size	KEYWORD2
+
 
 #######################################
 # Constants (LITERAL1)
