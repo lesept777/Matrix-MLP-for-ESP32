@@ -8,7 +8,7 @@ Two possibilities exist for now (others will come soon):
 * `H_TEST_PRUNE`: prune the network after training, during the test phase
 * `H_TRAI_PRUNE`: prune the network during training (and at the end during the test also)
 
-Pruning after training (option `H_TEST_PRUNE`) applies pruning on the trained network. It may lead to lower performances if the pruning is too aggressive, i.e. if too many neurons are removed. Pruning during training will reduce the impact of neurons removal, because the training continues after pruning which alleviates the effect of neruons removal.
+Pruning after training (option `H_TEST_PRUNE`) applies pruning on the trained network. It may lead to lower performances if the pruning is too aggressive, i.e. if too many neurons are removed. Pruning during training will reduce the impact of neurons removal, because the training continues after pruning which alleviates the effect of neurons removal.
 
 ## How pruning works
 Two kinds of pruning are implemented for now:
