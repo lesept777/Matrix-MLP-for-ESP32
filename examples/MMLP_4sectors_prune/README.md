@@ -19,7 +19,7 @@ Two kinds of pruning are implemented for now:
 net.setHeurPruning(true, threshold);
 ```
 
-The default value is 0.85, meaning that if a neuron has more than 85% of the weights in its row in the matrix that are equal to zero, it is a low activity neuron.
+The default value is 0.85, meaning that if a neuron has more than 85% of the weights in its row in the matrix that are equal to zero, it is a low activity neuron. `true` is set to enable the pruning (`false` will disable if necessary).
 
 Pruning works better with the `H_ZERO_WEIGH` heuristics option, which forces weights of absolute value under a given threshold to zero. The threshold can be set using the `setHeurZeroWeights`method:
 
@@ -27,7 +27,7 @@ Pruning works better with the `H_ZERO_WEIGH` heuristics option, which forces wei
 net.setHeurZeroWeights(true, threshold);
 ```
 
-Default value is 0.15: if during the training a weight has a value lower than 0.15, it is forced to 0.
+Default value is 0.15: if during the training a weight has an absolute value lower than the threshold, it is forced to 0.
 
 ## Pruning strategy
 During training, only inactive weights are removed, this is done two times depending on the training score: when the score passes under 4 times the objective score, and when it passes under 2 times the objective score:
@@ -50,14 +50,14 @@ During training, only inactive weights are removed, this is done two times depen
 ```
 The method `pruneInactive()`is used to select and remove inactive networks.
 
-Pruning during test removes both inactive and low activity neurons. It is done using the `pruneAll()` method which calls both `pruneInactive()` and `pruneLowAct()` methods.
+Pruning during test removes both inactive and low activity neurons. It is done using the `pruneAll()` method which calls both `pruneInactive()` and `pruneLowAct()` methods. Both methods return the number of pruned neurons.
 
 After pruning, `pruneAll()` returns a boolean which is `true` if any neuron was pruned. In this case, a new test phase is performed to provide the new network's statistics.
 
-## Example
+## Examples
 The file [Results.txt](./Results.txt) shows the results obtained for the 4 sectors classification example.
 
-The initial network has 794 total weights and biases (synapses), with 2 hidden layers of 30 and 20 neurons. The objective score is set to 0.04. When the score is under 0.16, the first pruning is run: 6 neurons are inactive, and the number of synapses is reduced to 656 (-17%).
+The initial network has 794 total weights and biases (synapses), with 2 hidden layers of 30 and 20 neurons. The objective score is set to 0.04. When the score passes under 0.16, the first pruning is run: 6 neurons are inactive, and the number of synapses is reduced to 656 (-17%).
 
 The training stops before the score can reach 0.08 for a second pruning phase.
 
@@ -90,4 +90,4 @@ TR/PR    0    1    2    3  (Recall)
   3 :    0    3    0   12  ( 80.0%)
 Prec:   76%  77% 100%  71%
 ```
-with an average test error jumping from 12% to 38% on 50 samples. However, the validation on unknown data remains at 90%.
+with an average test error jumping from 12% to 38% on 50 samples. However, the validation on unknown data remains at 90%. This shows the importance of the value of the threshold for low activity neurons pruning.
