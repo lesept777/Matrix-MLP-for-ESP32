@@ -73,3 +73,10 @@ The **sigmoid** and **hyperbolic tangent** activation functions cannot be used i
 ![RELU SIGMOID](https://miro.medium.com/max/1452/1*29VH_NiSdoLJ1jUMLrURCA.png "Sigmoid and RELU functions")
 
 **Softmax** for classification problems implemented. `SOFTMAX` can only be used for the last layer. If you choose it, the cost function is [Cross entropy](https://en.wikipedia.org/wiki/Cross_entropy). Otherwise, it's Squared error.
+
+## Create a dataset
+There are several ways to create a dataset:
+* read data from a csv file (see [Boston Housing](./examples/MMLP_BostonHousing) example)
+* create the data using a function:
+  * declare the dataset from vectors of float
+  * declare the dataset from arrays of float
