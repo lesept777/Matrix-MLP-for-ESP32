@@ -52,4 +52,24 @@ To declare a network, just create an array of int with the number of neurons in 
 int Neurons[] = {2, 20, 1}; // Number of neurons in each layer (from input to output)
 MLP Net(Neurons, 3, 1);     // number of layers, array of neurons, verbose level
 ```
+Declare the activations of each layer and set the hyperparameters.
+```
+int Activations[] = {RELU, RELU, SIGMOID};
+Net.setActivations (Activations);
+Net.setHyper(0.25f, 0.5f); // LR & momentum
+```
+### **Activation functions** currently available: 
+* `SIGMOID`: S-shaped curve, between 0 and 1
+* `SIGMOID2`: Similar to `SIGMOID`, but between -1 and +1
+* `TANH`: Quite similar to `SIGMOID2`
+* `RELU`: Rectified Linear Unit
+* `LEAKYRELU` and `ELU` variants
+* `SELU` : Scaled Exponential Linear Unit (prevents vanishing & exploding gradient problems)
+* `IDENTITY`
+* `SOFTMAX`
 
+The **sigmoid** and **hyperbolic tangent** activation functions cannot be used in networks with many layers due to the vanishing gradient problem. In the backpropagation process, gradients tend to get smaller and smaller as we move backwards:  neurons in earlier layers learn slower than neurons in the last layers. This leads to longer learning and less accurate prediction. The **rectified linear** activation function overcomes this problem, allowing models to learn faster and perform better.
+
+![RELU SIGMOID](https://miro.medium.com/max/1452/1*29VH_NiSdoLJ1jUMLrURCA.png "Sigmoid and RELU functions")
+
+**Softmax** for classification problems implemented. `SOFTMAX` can only be used for the last layer. If you choose it, the cost function is [Cross entropy](https://en.wikipedia.org/wiki/Cross_entropy). Otherwise, it's Squared error.
