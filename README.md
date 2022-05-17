@@ -80,4 +80,10 @@ There are several ways to create a dataset:
 * create the data using a function:
   * declare the dataset from vectors of float
   * declare the dataset from arrays of float
-The data can be normalized (several possible options) using the `normalizeDataset` method.
+
+The data can be normalized (several possible options) using the `normalizeDataset` method. Then the dataset can be split in 3 parts: training data, validation data and test data. Use `setTrainTest`method:
+```
+Net.setTrainTest(0.7, 0.2, 0.1); // 70% training, 20% validation, 10% test
+Net.setTrainTest(4, 1, 1);       // 4/6 = 66.66% training, 1/6 = 16.66% validation and test
+Net.setTrainTest(0.8, 0., 0.2);  // 70% training, 0% validation, 20% test
+```
