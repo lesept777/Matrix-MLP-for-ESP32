@@ -80,3 +80,4 @@ There are several ways to create a dataset:
 * create the data using a function:
   * declare the dataset from vectors of float
   * declare the dataset from arrays of float
+The data can be normalized (several possible options) using the `normalizeDataset` method.
