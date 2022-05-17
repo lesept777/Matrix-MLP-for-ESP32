@@ -2,7 +2,9 @@
 New version of MLP, using matrix maths
 
 # Dependencies
-Use my matrix linear algebra library (https://github.com/lesept777/Matrix-maths-for-ESP32-and-AI)
+* Uses my matrix linear algebra library (https://github.com/lesept777/Matrix-maths-for-ESP32-and-AI)
+* The library [LittleFS](https://github.com/lorol/LITTLEFS) is used for loading / saving files on SPIFFS.
+* You may also need to install the ESP32 data upload tool in the Arduino IDE. The LittleFS version is [here](https://github.com/lorol/arduino-esp32fs-plugin). Some help to install it (in French) is [here](https://forum.arduino.cc/t/littlefs-sur-esp32-comportement-bizarre/992297/2).
 
 # Description
 This library is designed to be used with the Arduino IDE.
@@ -45,6 +47,11 @@ Multilayer perceptron is decribed [here](https://en.wikipedia.org/wiki/Multilaye
 If you want to test it quickly, try the ["sinus" example](./examples/MMLP_Sinus)
 
 # Guidelines
+First load the libraries:
+```
+#include <Matrix.h>
+#include "MMLP.h"
+```
 ## Declare a network
 To declare a network, just create an array of int with the number of neurons in each layer. The arguments of the constructor are: number of layers, array of neurons, verbose level.
 ```
