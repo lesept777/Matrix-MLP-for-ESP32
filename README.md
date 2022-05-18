@@ -99,7 +99,7 @@ Net.setTrainTest(0.8, 0., 0.2);  // 70% training, 0% validation, 20% test
 ```
 `normalizeDataset` is used as follows:
 ```
-Net.`normalizeDataset(X, Y, opt);
+Net.normalizeDataset(X, Y, opt);
 ```
 `opt` ranges from 0 to 3:
 * 0: no normalization
