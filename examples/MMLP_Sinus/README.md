@@ -49,8 +49,8 @@ Learning parameters are:
 
   ///////////////////////////////////////////
   
-  std::vector<std::vector<float> > dataX;
-  std::vector<std::vector<float> > dataY;
+  MLMatrix<float> dataX;
+  MLMatrix<float> dataY;
   //  Net.createDatasetFromArray (dataX, dataY, x, y, nData);  // <-- dataset from arrays
   Net.createDatasetFromVector (dataX, dataY, x, y);
 ```
