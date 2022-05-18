@@ -48,8 +48,8 @@ void setup ()
 
   ///////////////////////////////////////////
   
-  MLMatrix<float> dataX;
-  MLMatrix<float> dataY;
+  MLMatrix<float> dataX(nData, 1);
+  MLMatrix<float> dataY(nData, 1);
   //  Net.createDatasetFromArray (dataX, dataY, x, y, nData);
   Net.createDatasetFromVector (dataX, dataY, x, y);
   Net.setTrainTest(4, 1, 1);
