@@ -49,8 +49,8 @@ Learning parameters are:
 
   ///////////////////////////////////////////
   
-  MLMatrix<float> dataX;
-  MLMatrix<float> dataY;
+  MLMatrix<float> dataX(nData, 1);
+  MLMatrix<float> dataY(nData, 1);
   //  Net.createDatasetFromArray (dataX, dataY, x, y, nData);  // <-- dataset from arrays
   Net.createDatasetFromVector (dataX, dataY, x, y);
 ```
