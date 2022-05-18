@@ -6,6 +6,9 @@ New version of MLP, using matrix maths
 * The library [LittleFS](https://github.com/lorol/LITTLEFS) is used for loading / saving files on SPIFFS.
 * You may also need to install the ESP32 data upload tool in the Arduino IDE. The LittleFS version is [here](https://github.com/lorol/arduino-esp32fs-plugin). Some help to install it (in French) is [here](https://forum.arduino.cc/t/littlefs-sur-esp32-comportement-bizarre/992297/2).
 
+# News
+2022/05/18: The dataset is now created using Matrices, which accelerates the computations.
+
 # Description
 This library is designed to be used with the Arduino IDE.
 
