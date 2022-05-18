@@ -48,8 +48,8 @@ void setup ()
 
   ///////////////////////////////////////////
   
-  std::vector<std::vector<float> > dataX;
-  std::vector<std::vector<float> > dataY;
+  MLMatrix<float> dataX;
+  MLMatrix<float> dataY;
   //  Net.createDatasetFromArray (dataX, dataY, x, y, nData);
   Net.createDatasetFromVector (dataX, dataY, x, y);
   Net.setTrainTest(4, 1, 1);
