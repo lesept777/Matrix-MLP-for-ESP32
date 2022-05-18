@@ -58,9 +58,9 @@ void MLP::initWeights ()
 
 		if (_xavier) { // Normal Xavier initialization
 				float mean = 0.0f;
-				float std_dev = sqrt(2.0f / (_neurons[k + 1], _neurons[k]));
+				float std_dev = sqrt(2.0f / (_neurons[k + 1] + _neurons[k]));
 				W.randomNormal(mean, std_dev);
-				std_dev = sqrt(2.0f / (_neurons[k + 1], 1));
+				std_dev = sqrt(2.0f / (_neurons[k + 1]));
 				B.randomNormal(mean, std_dev);
 		}
 
@@ -124,7 +124,7 @@ void MLP::setHyper (const float eta, const float momentum)
 
 	if (_verbose > 0)	{
 		Serial.println ("Setting hyperparameters:");
-		Serial.printf(" - Learning rate = %f\n - Momentum      = %f\n", _eta, _momentum);
+		Serial.printf("- Learning rate = %f\n- Momentum      = %f\n", _eta, _momentum);
 	}
 }
 
@@ -192,22 +192,22 @@ void MLP::displayHeuristics ()
   if (_shuffleDataset)  Serial.println ("- Shuffle dataset if needed");
   if (_changeWeights)   Serial.println ("- Random weights if needed");
   if (_mutateWeights)   Serial.println ("- Slightly change weights if needed");
-  if (_changeLRlin)     Serial.println ("- Variable learning rate (linear scale)");
-  if (_changeLRlog)     Serial.println ("- Variable learning rate (log scale)");
-  if (_changeGain)      Serial.println ("- Random variable Sigmoid gain");
-  if (_changeMom)       Serial.println ("- Random variable momentum");
-  if (_varMom)          Serial.println ("- Quadratic variable momentum");
+  if (_changeLRlin)     Serial.printf  ("- Variable learning rate (linear scale from %.3f to %.3f)\n", _eta, _etaMin);
+  if (_changeLRlog)     Serial.printf  ("- Variable learning rate (log scale from 10^%.3f to 10^%.3f)\n", _logLRmax, _logLRmin);
+  if (_changeGain)      Serial.printf  ("- Random variable Sigmoid gain between %.3f and %.3f\n", _minGain, _maxGain);
+  if (_changeMom)       Serial.printf  ("- Random variable momentum between %.3f and %.3f\n", _minAlpha, _maxAlpha);
+  if (_varMom)          Serial.printf  ("- Quadratic variable momentum from %.3f to %.3f\n", _maxMom, _minMom);
   if (_zeroWeights)     Serial.printf  ("- Force weights less than %.3f to zero\n", _zeroThreshold);
   if (_stopTotalError)  Serial.println ("- Stop optimization if train + validation errors under threshold");
-  if (_regulL1)         Serial.printf  ("- Use L1 weight regularization (lambda = %.2f)\n", _lambdaRegulL1);
-  if (_regulL2)         Serial.printf  ("- Use L2 weight regularization (lambda = %.2f)\n", _lambdaRegulL2);
+  if (_regulL1)         Serial.printf  ("- Use L1 weight regularization (lambda = %.3f)\n", _lambdaRegulL1);
+  if (_regulL2)         Serial.printf  ("- Use L2 weight regularization (lambda = %.3f)\n", _lambdaRegulL2);
   if (_bestEta)					Serial.println ("- Search for best learning rate at each epoch (experimental)");
   if (_labelSmoothing)  Serial.println ("- Label smoothing ON");
   if (_gradClip)        Serial.printf  ("- Gradient clipping (clip value %.3f)\n", _gradClipValue);
   if (_gradScaling)     Serial.printf  ("- Use gradient scaling (Norm to %.3f)\n", _gradScale);
   if (_prune_topk)			Serial.println ("- TopK prining ON");
   if (_prune_train)     _prune_neurons = true;
-  if (_prune_train)     Serial.println ("- Prune inactive neurons during training phase");
+  if (_prune_train)     Serial.println ("- Prune inactive or low activity neurons during training phase");
   if (_prune_neurons)   Serial.println ("- Prune inactive or low activity neurons at test phase");
   // if (_parallelRun)     Serial.println ("- Compute using both processors");
   // if (_enableSkip)      Serial.println ("- Layer skip enabled (ResNet like)");
@@ -215,13 +215,13 @@ void MLP::displayHeuristics ()
 }
 
 // Set the value of '_initialize'
-void MLP::setHeurInitialize (bool val) {
+void MLP::setHeurInitialize (const bool val) {
   _initialize = val;
   if (!_initialize) _selectWeights = false;
   if (!_initialize) _xavier = false;
 }
 
-void MLP::setVerbose (uint8_t verbose) {
+void MLP::setVerbose (const uint8_t verbose) {
   /*
      verbose levels:
      0: silent
@@ -232,22 +232,22 @@ void MLP::setVerbose (uint8_t verbose) {
   _verbose = verbose;
 }
 
-void MLP::setEpochs (int epochs) { _maxEpochs = epochs; }
-void MLP::setBatchSize (int batchSize) {
+void MLP::setEpochs (const int epochs) { _maxEpochs = epochs; }
+void MLP::setBatchSize (const int batchSize) {
   _batchSize = batchSize;
   // if (_enablePS) _batchSize = 1;
 }
-void MLP::setMomentum (float momentum) {
+void MLP::setMomentum (const float momentum) {
   _momentum = momentum;
   _momentum_save = momentum;
 }
-void MLP::setEta (float eta) {
+void MLP::setEta (const float eta) {
   _eta = eta;
   _eta_save = eta;
 }
 
 // Set the variation range for the learning rate (either lin or log scale)
-void MLP::setEtaRange (float from, float to)
+void MLP::setEtaRange (const float from, const float to)
 {
 	if (_changeLRlog) { // input log values (e.g. -2, -4)
 		_logLRmax = from;
@@ -258,7 +258,7 @@ void MLP::setEtaRange (float from, float to)
 	}
 }
 
-void MLP::setMomRange  (float from, float to)
+void MLP::setMomRange  (const float from, const float to)
 {
 	_minMom   = from;
 	_maxMom   = to;
@@ -267,7 +267,7 @@ void MLP::setMomRange  (float from, float to)
 }
 
 // Set the gain of Sigmoid (to change the slope at origin)
-void MLP::setGain (float gain) {
+void MLP::setGain (const float gain) {
   _gain = gain;
   _gain_save = gain;
 }
@@ -291,7 +291,7 @@ float MLP::getWeight (int layer, int lower, int upper) {
   return Weights[layer](upper, lower);
 }
 
-int MLP::setWeight (int layer, int upper, int lower, float val) {
+int MLP::setWeight (const int layer, const int upper, const int lower, const float val) {
   if (layer >= _nLayers) return 0;
   if (upper > _neurons[layer]) return 0;
   if (lower > _neurons[layer - 1]) return 0;
@@ -299,40 +299,40 @@ int MLP::setWeight (int layer, int upper, int lower, float val) {
   return 1;
 }
 
-void MLP::setHeurShuffleDataset (bool val) { _shuffleDataset = val; }
-void MLP::setHeurZeroWeights (bool val, float zeroThreshold) {
+void MLP::setHeurShuffleDataset (const bool val) { _shuffleDataset = val; }
+void MLP::setHeurZeroWeights (const bool val, const float zeroThreshold) {
   _zeroWeights   = val;
   _zeroThreshold = zeroThreshold;
 }
-void MLP::setHeurRegulL1 (bool val, float lambda) {
+void MLP::setHeurRegulL1 (const bool val, const float lambda) {
   _regulL1 = val;
   _lambdaRegulL1 = lambda;
 }
-void MLP::setHeurRegulL2 (bool val, float lambda) {
+void MLP::setHeurRegulL2 (const bool val, const float lambda) {
   _regulL2 = val;
   _lambdaRegulL2 = lambda;
 }
 
-void MLP::setHeurGradScale (bool val, float scale) { 
+void MLP::setHeurGradScale (const bool val, const float scale) { 
 	_gradScaling   = val,
 	_gradScale     = scale; 
 }
-void MLP::setHeurGradClip (bool val, float clip) { 
+void MLP::setHeurGradClip (const bool val, const float clip) { 
 	_gradClip      = val;
 	_gradClipValue = clip; 
 }
 
-void MLP::setHeurChangeMomentum (bool val, float minAlpha, float maxAlpha) {
+void MLP::setHeurChangeMomentum (const bool val, const float minAlpha, const float maxAlpha) {
   _changeMom      = val;
   _minAlpha       = minAlpha;
   _maxAlpha       = maxAlpha;
 }
-void MLP::setHeurChangeGain (bool val, float minGain, float maxGain) {
+void MLP::setHeurChangeGain (const bool val, const float minGain, const float maxGain) {
   _changeGain    = val;
   _minGain       = minGain;
   _maxGain       = maxGain;
 }
-void MLP::setHeurPruning (bool val, float threshold){
+void MLP::setHeurPruning (const bool val, float const threshold){
 	_prune_neurons = val;
 	_pruningThreshold = threshold;
 }
@@ -446,7 +446,7 @@ int MLP::size() const
 }
 
 // Display the parameters of the network
-void MLP::displayNetwork()
+void MLP::displayNetwork() 
 {
 	restoreWeights();
 	Serial.println("\n---------------------------");
@@ -464,15 +464,15 @@ void MLP::displayNetwork()
 		}
 	}
 	Serial.printf("Total number of synapses: %d (i.e. weights + biases)\n", nbSynapses);
-	Serial.printf("Average L1 norm of synapses: %f\n",regulL1Weights() / numberOfWeights());
-	Serial.printf("Average L2 norm of synapses: %f\n",regulL2Weights() / numberOfWeights());
+	Serial.printf("Average L1 norm of synapses: %.3f\n",regulL1Weights() / numberOfWeights());
+	Serial.printf("Average L2 norm of synapses: %.3f\n",regulL2Weights() / numberOfWeights());
 	float mean = meanWeights();
-	Serial.printf("Average value of synapses:   %f\n", mean);
-	Serial.printf("Standard dev. of synapses:   %f\n", stdevWeights(mean));
+	Serial.printf("Average value of synapses:   %.3f\n", mean);
+	Serial.printf("Standard dev. of synapses:   %.3f\n", stdevWeights(mean));
 	statWeights();
-	Serial.printf("\nFinal learning rate: %f\n", _eta);
-	Serial.printf("Final Sigmoid gain : %f\n", _gain);
-	Serial.printf("Final momentum     : %f\n", _momentum);
+	Serial.printf("\nFinal learning rate: %.3f\n", _eta);
+	Serial.printf("Final Sigmoid gain : %.3f\n", _gain);
+	Serial.printf("Final momentum     : %.3f\n", _momentum);
 	Serial.println("---------------------------");
 }
 
@@ -693,19 +693,13 @@ uint32_t MLP::estimateDuration (int maxEpochs)
 
 	MLMatrix<float> x(_nInputs, 1, 0.0f);  // Input array
 	MLMatrix<float> y(_nClasses, 1, 0.0f); // ground truth
-	// std::vector<MLMatrix<float> > dWeights;
-	// std::vector<MLMatrix<float> > dBiases;
 	// Forward pass
 	MLMatrix<float> yhat = forward (x, false);
 	// Compute error
 	float err = error (y, yhat);
 	// Backward pass
-	// backward (dWeights, dBiases, yhat, y, 0);
 	backward (yhat, y, 0);
 	// Update weights
-	// std::vector<MLMatrix<float> > dWeightsOld = dWeights;
-	// std::vector<MLMatrix<float> > dBiasesOld = Biases;
-	// update (Weights, dWeights, dWeightsOld, Biases, dBiases, dBiasesOld, _batchSize);
 	dWeightsOld = dWeights;
 	dBiasesOld = Biases;
 	update (_batchSize);
@@ -784,7 +778,7 @@ float MLP::meanWeights()
 }
 
 // Compute the standard deviation of all weights and biases
-float MLP::stdevWeights (float mean)
+float MLP::stdevWeights (const float mean)
 {
   float stdev = 0.0f;
 	for (int k = 0; k < _nLayers - 1; ++k) {
@@ -842,7 +836,7 @@ void MLP::displayWeights()
 *************************************/
 // Process the dataset (number of data, min and max values)
 // First case: dataset already a vector of vectors
-void MLP::createDataset (const std::vector<std::vector<float> > x0, std::vector<std::vector<float> > &y0, const int nData)
+void MLP::createDataset (const MLMatrix<float> x0, MLMatrix<float> &y0, const int nData)
 {
 	_nData = nData;
 	_xmin.clear();
@@ -854,7 +848,7 @@ void MLP::createDataset (const std::vector<std::vector<float> > x0, std::vector<
 		_xmin.push_back(MAX_float);
 		_xmax.push_back(MIN_float);
 		for (int i = 0; i < _nData; ++i) {
-			float xx = x0[i][j];
+			float xx = x0(i,j);
 			if (xx < _xmin[j]) _xmin[j] = xx;
 			if (xx > _xmax[j]) _xmax[j] = xx;
 		}
@@ -866,10 +860,10 @@ void MLP::createDataset (const std::vector<std::vector<float> > x0, std::vector<
 			if (_enSoftmax && _labelSmoothing) {
 				// Label smoothing is a way of adding noise at the output targets, aka labels.
 				float epsilon = 0.001f;
-				if (y0[i][j] == 0.0f) y0[i][j] = epsilon / (_nClasses - 1.0f);
-				else                  y0[i][j] = 1.0f - epsilon;
+				if (y0(i,j) == 0.0f) y0(i,j) = epsilon / (_nClasses - 1.0f);
+				else                 y0(i,j) = 1.0f - epsilon;
 			}
-			float yy = y0[i][j];
+			float yy = y0(i,j);
 			if (yy < _ymin[j]) _ymin[j] = yy;
 			if (yy > _ymax[j]) _ymax[j] = yy;
 		}
@@ -877,20 +871,21 @@ void MLP::createDataset (const std::vector<std::vector<float> > x0, std::vector<
 
 	if (_verbose > 0) Serial.println("Processing dataset");
 	if (_verbose > 1) {
+		Serial.printf("\tDataset contains %d data\n", _nData);
 		Serial.print("\tMin value of x: ");
-		for (int j = 0; j < _nInputs; ++j)  Serial.printf("%.3f ", _xmin[j]); Serial.println();
+		for (int j = 0; j < _nInputs; ++j)  Serial.printf("%9.3f ", _xmin[j]); Serial.println();
 		Serial.print("\tMax value of x: ");
-		for (int j = 0; j < _nInputs; ++j)  Serial.printf("%.3f ", _xmax[j]); Serial.println();
+		for (int j = 0; j < _nInputs; ++j)  Serial.printf("%9.3f ", _xmax[j]); Serial.println();
 		Serial.printf("\tMin value of y: ");
-		for (int j = 0; j < _nClasses; ++j) Serial.printf("%.3f ", _ymin[j]); Serial.println();
+		for (int j = 0; j < _nClasses; ++j) Serial.printf("%9.3f ", _ymin[j]); Serial.println();
 		Serial.printf("\tMax value of y: ");
-		for (int j = 0; j < _nClasses; ++j) Serial.printf("%.3f ", _ymax[j]); Serial.println();
+		for (int j = 0; j < _nClasses; ++j) Serial.printf("%9.3f ", _ymax[j]); Serial.println();
 	}
 }
 
 // Second case: dataset is an array
-// Implies 1 input and 1 output
-void MLP::createDatasetFromArray (std::vector<std::vector<float> > &x0, std::vector<std::vector<float> > &y0, const float *x, const float *y, const int nData)
+// Implies 1 input neuron and 1 output neuron
+void MLP::createDatasetFromArray (MLMatrix<float> &x0, MLMatrix<float> &y0, const float *x, const float *y, const int nData)
 {
 	_nData = nData;
 	_xmin.clear();
@@ -903,19 +898,19 @@ void MLP::createDatasetFromArray (std::vector<std::vector<float> > &x0, std::vec
 	_ymin.push_back(MAX_float);
 	_ymax.push_back(MIN_float);
 
+	std::vector<float> a, b;
 	for (int i = 0; i < _nData; ++i) {
 		if (x[i] < _xmin[0]) _xmin[0] = x[i];
 		if (x[i] > _xmax[0]) _xmax[0] = x[i];
 		if (y[i] < _ymin[0]) _ymin[0] = y[i];
 		if (y[i] > _ymax[0]) _ymax[0] = y[i];
-		std::vector<float> a, b;
 		a.push_back(x[i]);
 		b.push_back(y[i]);
-		x0.push_back(a);
-		y0.push_back(b);
 	}
+	x0 = a;
+	y0 = b;
 
-	if (_verbose > 0) Serial.println("Creating dataset from array");
+	if (_verbose > 0) Serial.printf("Creating dataset from arrays of size %d\n", _nData);
 	if (_verbose > 1) {
 		Serial.printf("\tMin value of x: %f\n", _xmin[0]);
 		Serial.printf("\tMax value of x: %f\n", _xmax[0]);
@@ -924,9 +919,9 @@ void MLP::createDatasetFromArray (std::vector<std::vector<float> > &x0, std::vec
 	}
 }
 
-// Second case: dataset is an array
+// Third case: dataset is a vector
 // Implies 1 input and 1 output
-void MLP::createDatasetFromVector (std::vector<std::vector<float> > &x0, std::vector<std::vector<float> > &y0, const std::vector<float>x, const std::vector<float>y)
+void MLP::createDatasetFromVector (MLMatrix<float> &x0, MLMatrix<float> &y0, const std::vector<float>x, const std::vector<float>y)
 {
 	_nData = x.size();
 	_xmin.clear();
@@ -944,14 +939,11 @@ void MLP::createDatasetFromVector (std::vector<std::vector<float> > &x0, std::ve
 		if (x[i] > _xmax[0]) _xmax[0] = x[i];
 		if (y[i] < _ymin[0]) _ymin[0] = y[i];
 		if (y[i] > _ymax[0]) _ymax[0] = y[i];
-		std::vector<float> a, b;
-		a.push_back(x[i]);
-		b.push_back(y[i]);
-		x0.push_back(a);
-		y0.push_back(b);
 	}
+	x0 = x;
+	y0 = y;
 
-	if (_verbose > 0) Serial.println("Creating dataset from vector");
+	if (_verbose > 0) Serial.printf("Creating dataset from vectors of size %d\n", _nData);
 	if (_verbose > 1) {
 		Serial.printf("\tMin value of x: %f\n", _xmin[0]);
 		Serial.printf("\tMax value of x: %f\n", _xmax[0]);
@@ -960,7 +952,7 @@ void MLP::createDatasetFromVector (std::vector<std::vector<float> > &x0, std::ve
 	}
 }
 
-void MLP::shuffleDataset (std::vector<std::vector<float> > &x, std::vector<std::vector<float> > &y, uint16_t from, uint16_t to)
+void MLP::shuffleDataset (MLMatrix<float> &x, MLMatrix<float> &y, uint16_t from, uint16_t to)
 {
 	if (_verbose > 0) Serial.println("Shuffling dataset...");
 	if (from >= to || from > _nData || to > _nData) {
@@ -970,15 +962,21 @@ void MLP::shuffleDataset (std::vector<std::vector<float> > &x, std::vector<std::
 	// if (to >= _nData) to = _nData;
 	// if (from >= _nData) from = to - 1;
 
-	for (int i = 0; i < 10 * _nData; ++i) {
+	for (unsigned i = 0; i < 5 * _nData; ++i) {
 		int k = random(from, to);
 		int m = random(from, to);
-		std::vector<float> a = x[k];
-		std::vector<float> b = y[k];
-		x[k] = x[m];
-		y[k] = y[m];
-		x[m] = a;
-		y[m] = b;
+		MLMatrix<float> Xk(1, _nInputs, 0);
+		MLMatrix<float> Yk(1, _nClasses, 0);
+		Xk = x.row(k);
+		Yk = y.row(k);
+		for (unsigned j = 0; j < _nInputs; ++j)  {
+			x(k,j) = x(m,j);
+			x(m,j) = Xk(0,j);
+		}
+		for (unsigned j = 0; j < _nClasses; ++j) {
+			y(k,j) = y(m,j);
+			y(m,j) = Yk(0,j);
+		}
 	}
 }
 
@@ -992,19 +990,23 @@ void MLP::shuffleDataset (std::vector<std::vector<float> > &x, std::vector<std::
 		2: data is set to interval [-1 - 1]
 		3: (data - mean) / std_dev
 */
-void MLP::normalizeDataset (std::vector<std::vector<float> > &x, std::vector<std::vector<float> > &y, const uint8_t norm)
+void MLP::normalizeDataset (MLMatrix<float> &x, MLMatrix<float> &y, const uint8_t norm)
 {
-	Serial.println("Normalizing the dataset");
+	Serial.printf("Normalizing the dataset (option %d)\n", norm);
 	_norm = norm;
 	switch (_norm) {
 		case 0: break;
 		case 1: {
 			for (unsigned i=0; i<_nData; ++i) {
-				for (unsigned j=0; j<_nInputs; ++j)
-					x[i][j] = (x[i][j] - _xmin[j]) / (_xmax[j] - _xmin[j]);
+				for (unsigned j=0; j<_nInputs; ++j) {
+					x(i,j) = (x(i,j) - _xmin[j]) / (_xmax[j] - _xmin[j]);
+					// if (i==0) Serial.printf("input %d : min %f max %f\n",j,_xmin[j], _xmax[j]);
+				}
 				if (_activations[_nLayers - 2] != SOFTMAX) {
-					for (unsigned j=0; j<_nClasses; ++j)
-						y[i][j] = (y[i][j] - _ymin[j]) / (_ymax[j] - _ymin[j]);
+					for (unsigned j=0; j<_nClasses; ++j) {
+						y(i,j) = (y(i,j) - _ymin[j]) / (_ymax[j] - _ymin[j]);
+					// if (i==0) Serial.printf("class %d : min %f max %f\n",j,_ymin[j], _ymax[j]);
+					}
 				}				
 			}
 			break;	
@@ -1012,10 +1014,10 @@ void MLP::normalizeDataset (std::vector<std::vector<float> > &x, std::vector<std
 		case 2: {
 			for (unsigned i=0; i<_nData; ++i) {
 				for (unsigned j=0; j<_nInputs; ++j)
-					x[i][j] = ((x[i][j] - _xmin[j]) / (_xmax[j] - _xmin[j]) - 0.5f) * 2.0f;
+					x(i,j) = ((x(i,j) - _xmin[j]) / (_xmax[j] - _xmin[j]) - 0.5f) * 2.0f;
 				if (_activations[_nLayers - 2] != SOFTMAX) {
 					for (unsigned j=0; j<_nClasses; ++j)
-						y[i][j] = ((y[i][j] - _ymin[j]) / (_ymax[j] - _ymin[j]) - 0.5f) * 2.0f;
+						y(i,j) = ((y(i,j) - _ymin[j]) / (_ymax[j] - _ymin[j]) - 0.5f) * 2.0f;
 				}
 				// Serial.printf("%d x %f y %f\n",i,x[i][0], y[i][0]);
 			}
@@ -1029,20 +1031,20 @@ void MLP::normalizeDataset (std::vector<std::vector<float> > &x, std::vector<std
 
 			for (unsigned j=0; j<_nInputs; ++j) {
 				MLMatrix<float> vx(_nData,1,0);
-				for (unsigned i=0; i<_nData; ++i) vx(i,0) = x[i][j];
+				for (unsigned i=0; i<_nData; ++i) vx(i,0) = x(i,j);
 				_xMean.push_back(vx.mean());
 				_xStdev.push_back(vx.stdev(_xMean[j]));
 				for (unsigned i=0; i<_nData; ++i)
-					x[i][j] = (x[i][j] - _xMean[j]) / _xStdev[j];	
+					x(i,j) = (x(i,j) - _xMean[j]) / _xStdev[j];	
 			}
 			if (_activations[_nLayers - 2] != SOFTMAX) {
 				for (unsigned j=0; j<_nClasses; ++j) {
 					MLMatrix<float> vy(_nData,1,0);
-					for (unsigned i=0; i<_nData; ++i) vy(i,0) = y[i][j];
+					for (unsigned i=0; i<_nData; ++i) vy(i,0) = y(i,j);
 					_yMean.push_back(vy.mean());
 					_yStdev.push_back(vy.stdev(_yMean[j]));
 					for (unsigned i=0; i<_nData; ++i)
-							y[i][j] = (y[i][j] - _yMean[j]) / _yStdev[j];	
+							y(i,j) = (y(i,j) - _yMean[j]) / _yStdev[j];	
 				}
 			}
 			break;
@@ -1116,6 +1118,37 @@ void MLP::normalize(MLMatrix<float> &x, const uint8_t norm)
 	}
 }
 
+// void MLP::deNorm (std::vector<std::vector<float> > &y, const uint8_t norm)
+// {
+// 	unsigned rows = y.size();
+// 	unsigned cols = y[0].size();
+// 	if (_verbose > 1) Serial.printf("deNorm: cols %d rows %d\n",cols,rows);
+// 	switch (norm) {
+// 		case 0: break;
+// 		case 1: {
+// 			for (unsigned i=0; i<rows; ++i)
+// 				for (unsigned j=0; j<cols; ++j)
+// 					y(i,j) = (y(i,j) * (_ymax[j] - _ymin[j])) + _ymin[j];
+// 			break;
+// 		}
+// 		case 2: {
+// 			for (unsigned i=0; i<rows; i++)
+// 				for (unsigned j=0; j<cols; ++j)
+// 					y(i,j) = ((y(i,j) / 2.0f) + 0.5f) * (_ymax[j] - _ymin[j]) + _ymin[j];
+// 			break;		
+// 		}
+// 		case 3: {
+// 			for (unsigned i=0; i<rows; i++) 
+// 				for (unsigned j=0; j<cols; ++j)
+// 					y(i,j)= (y(i,j) * _yStdev[j]) + _yMean[j];
+// 			break;
+// 		}
+// 		default:
+// 			Serial.printf("Normalization error : invalid argument (%u)\n", norm);
+// 			break;
+// 	}
+// }
+
 void MLP::deNorm(MLMatrix<float> &y, const uint8_t norm)
 {
 	unsigned rows = y.get_rows();
@@ -1172,14 +1205,13 @@ void MLP::deNorm(MLMatrix<float> &y, const uint8_t norm)
 }
 
 /*
-    readCsvFromSpiffs (filename, dataset, nData, coeff)
+    readCsvFromSpiffs (filename, x, y)
     Reads the dataset from a csv file on LITTLEFS
     nData : number of lines of the file
     A line is made of: x1, x2, x3 ... xN, Out
     where N is the number of neurons of the input layer
-    coeff : a coefficient to divide the out values if they are too big
 */
-int MLP::readCsvFromSpiffs (const char* const path, std::vector<std::vector<float> >& x0, std::vector<std::vector<float> >& y0)
+int MLP::readCsvFromSpiffs (const char* const path, MLMatrix<float>& x0, MLMatrix<float>& y0)
 {
 	File file = LITTLEFS.open(path);
 	if (!file || file.isDirectory()) {
@@ -1188,8 +1220,6 @@ int MLP::readCsvFromSpiffs (const char* const path, std::vector<std::vector<floa
 	}
 	char buffer[500];
 	char * pch;
-	x0.clear();
-	y0.clear();
 
 	// First line : number of cols = 1 + number of input neurons
 	int nData = 1;
@@ -1222,8 +1252,9 @@ int MLP::readCsvFromSpiffs (const char* const path, std::vector<std::vector<floa
 			nCols, _neurons[0], _neurons[0] + 1);
 		while (1);
 	}
-	x0.push_back(X);
-	y0.push_back(Y);
+	std::vector<std::vector<float> > Vx, Vy;
+	Vx.push_back(X);
+	Vy.push_back(Y);
 
 	// Next lines
 	while (file.available()) {
@@ -1243,10 +1274,15 @@ int MLP::readCsvFromSpiffs (const char* const path, std::vector<std::vector<floa
 			else Y.push_back(data);
 			pch = strtok (NULL, ",;");
 		}
-		x0.push_back(X);
-		y0.push_back(Y);
+		Vx.push_back(X);
+		Vy.push_back(Y);
 		++nData;
 	}
+
+	x0.setSize(nData, _nInputs);
+	y0.setSize(nData, _nClasses);
+	x0 = Vx;
+	y0 = Vy;
 
 	createDataset (x0, y0, nData);
 	if (_verbose > 0) Serial.printf("Read %d data of %d input\n", nData, _neurons[0]);
@@ -1260,22 +1296,17 @@ int MLP::readCsvFromSpiffs (const char* const path, std::vector<std::vector<floa
 *************************************/
 MLMatrix<float> MLP::forward (MLMatrix<float> x, bool onlyInference)
 {
-	// if (_verbose > 1) Serial.println("Forward...");
+	if (_verbose > 2) Serial.println("Forward...");
 	// 1: Clear workspace
 	_a.clear();
-	// _z.clear();
 	MLMatrix<float> yhat;
 	// 2: Forward pass
 	if (!onlyInference) _a.push_back(x); // saved for backward pass
 
 	for (int k = 0; k < _nLayers - 1; ++k) {
 		yhat = Weights[k] * x + Biases[k];
-		// if (!onlyInference) _z.push_back(yhat); // saved for backward pass
-
-		// yhat.applySelf(Activation[_activations[k]]);
 		yhat = activation(yhat, _activations[k]);
 		if (!onlyInference) _a.push_back(yhat); // saved for backward pass
-
 		x = yhat;
 	}
 	return yhat;
@@ -1341,9 +1372,7 @@ MLMatrix<float> MLP::dActivation(MLMatrix<float> x, const uint8_t activNumber)
 
 float MLP::error (MLMatrix<float> y, MLMatrix<float> yhat) const
 {
-	// if (_verbose > 1) Serial.print("Error... ");
-	// MLMatrix<float> dy = y - yhat;
-	// float err = dy.L1Norm();
+	if (_verbose > 2) Serial.print("Error... ");
 	float err = 0.0f;
 	int idh0, idh1, idy0, idy1;
 	if (_enSoftmax) {
@@ -1354,7 +1383,6 @@ float MLP::error (MLMatrix<float> y, MLMatrix<float> yhat) const
 		for (int c = 0; c < _nClasses; ++c) 
 			err += abs (y(c, 0) - yhat(c, 0));
 	}
-  // if (_verbose > 0) Serial.printf("Error = %f (%d %d)\n", err,idh0, idy0);
 	return err;
 }
 // ************************************************************************
@@ -1365,7 +1393,7 @@ float MLP::error (MLMatrix<float> y, MLMatrix<float> yhat) const
 void MLP::heuristics (int epoch, int maxEpochs, bool _better)
 {
 	static bool Aup = true;
-	static bool Gup = true;
+	static bool Gup = false;
 	static uint8_t nbRestore = 0;
 
 	// Restore or change weights if too many epochs without improvement
@@ -1451,10 +1479,9 @@ void MLP::heuristics (int epoch, int maxEpochs, bool _better)
 	}
 }
 
-// void MLP::backward (std::vector<MLMatrix<float> > &dWeights, std::vector<MLMatrix<float> > &dBiases, const MLMatrix<float> yhat, const MLMatrix<float> y, const int d)
 void MLP::backward (const MLMatrix<float> yhat, const MLMatrix<float> y, const int d)
 {
-	if (_verbose > 1) Serial.println("Backward...");
+	if (_verbose > 2) Serial.println("Backward...");
 	MLMatrix<float> delta;
 	MLMatrix<float> Weights_old;
 
@@ -1476,8 +1503,6 @@ void MLP::backward (const MLMatrix<float> yhat, const MLMatrix<float> y, const i
   }
 }
 
-// void MLP::update (std::vector<MLMatrix<float> > &Weights, std::vector<MLMatrix<float> > dWeights, std::vector<MLMatrix<float> > dWeightsOld, 
-// 	std::vector<MLMatrix<float> > &Biases, std::vector<MLMatrix<float> > dBiases, std::vector<MLMatrix<float> > dBiasesOld, const int batchSize)
 void MLP::update (const int batchSize)
 {
 	for (int k = _nLayers - 1; k > 0; --k) {
@@ -1527,7 +1552,6 @@ void MLP::update (const int batchSize)
 	_firstRun = false;
 }
 
-// void MLP::searchEta (MLMatrix<float> x, MLMatrix<float> y, float Err, std::vector<MLMatrix<float> > dWeights, std::vector<MLMatrix<float> > dBiases, std::vector<MLMatrix<float> > dWeightsOld, std::vector<MLMatrix<float> > dBiasesOld)
 void MLP::searchEta (MLMatrix<float> x, MLMatrix<float> y, float Err)
 {
 	MLMatrix<float> x0 = x;
@@ -1536,7 +1560,6 @@ void MLP::searchEta (MLMatrix<float> x, MLMatrix<float> y, float Err)
 	float err;
 	while (_eta > _etaMin) {
 		_firstRun = true;
-		// update (Weights, dWeights, dWeightsOld, Biases, dBiases, dBiasesOld, _batchSize);
 		update (_batchSize);
 		MLMatrix<float> yhat = forward (x, true);
 		x = x0;
@@ -1545,7 +1568,6 @@ void MLP::searchEta (MLMatrix<float> x, MLMatrix<float> y, float Err)
 		while (err < prevErr && err > _minError * 0.75f) {
 			prevErr = err;
 			_firstRun = true;
-			// update (Weights, dWeights, dWeightsOld, Biases, dBiases, dBiasesOld, _batchSize);
 			update (_batchSize);
 			yhat = forward (x, true);
 			err = error (y, yhat);
@@ -1558,30 +1580,31 @@ void MLP::searchEta (MLMatrix<float> x, MLMatrix<float> y, float Err)
 }
 
 // Test 30 random sets of weights and use the best one for optimization
-void MLP::searchBestWeights(const std::vector<std::vector<float> > x0, const std::vector<std::vector<float> > y0)
+void MLP::searchBestWeights(const MLMatrix<float> x0, const MLMatrix<float> y0)
 {
-	byte N = 30;
 	Serial.println("Searching best starting weights");
-	MLMatrix<float> x(_nInputs, 1, 0.0f);  // Input array
-	MLMatrix<float> y(_nClasses, 1, 0.0f); // ground truth
-	float minErr = 100.0f;
+	byte N = 30; // Number of random tests
+	float minErr = 100000.0f;
 
+	MLMatrix<float> x(_nInputs,  1, 0.0f);  // Input array
+	MLMatrix<float> y(_nClasses, 1, 0.0f);  // Ground truth
+	
 	for (unsigned i=0; i<N; ++i) {
 		float err = 0.0f;
-		initWeights();
-		for (int d = 0; d < _nData / 3; ++d) {
-			for (int i = 0; i < _nInputs; ++i)  x(i, 0) = x0[d][i];
-			for (int c = 0; c < _nClasses; ++c) y(c, 0) = y0[d][c];					
+		for (int d = 0; d < _nTrain / 3; ++d) {
+			for (int i = 0; i < _nInputs; ++i)  x(i, 0) = x0(d,i);
+			for (int c = 0; c < _nClasses; ++c) y(c, 0) = y0(d,i);
+			initWeights();
 // Forward pass
 			MLMatrix<float> yhat = forward (x, true);
 // Compute error
 			err += error (y, yhat);
 		}
-		err /= (_nData / 3);
-
+		err /= (_nTrain / 3);
+		if (_verbose > 1) Serial.printf ("Trial number %d, error %f (%f)\n",i,err,minErr);
+		
 		if (err < minErr) {
 			minErr = err;
-			// if (_verbose > 1) 
 			Serial.printf("--> Found better weights (error = %.4f)\n",minErr);
 			saveWeights();
 		}
@@ -1594,7 +1617,7 @@ void MLP::searchBestWeights(const std::vector<std::vector<float> > x0, const std
 //     Optimize the network
 //
 // ************************************************************************
-void MLP::run(std::vector<std::vector<float> > x0, std::vector<std::vector<float> > y0, int maxEpochs, int batchSize, float stopError)
+void MLP::run(MLMatrix<float> x0, MLMatrix<float> y0, int maxEpochs, int batchSize, float stopError)
 {
 	Serial.printf("Batch size = %d\n",batchSize);
 	Serial.printf("Stopping if error < %.3f\n",stopError);
@@ -1632,10 +1655,6 @@ void MLP::run(std::vector<std::vector<float> > x0, std::vector<std::vector<float
 	Serial.printf("Estimated maximum duration : %.2f s for %d epochs\n", duration/1000.0f, maxEpochs);
 	MLMatrix<float> x(_nInputs, 1, 0.0f);  // Input array
 	MLMatrix<float> y(_nClasses, 1, 0.0f); // Ground truth
-	// std::vector<MLMatrix<float> > dWeightsOld;
-	// std::vector<MLMatrix<float> > dBiasesOld;
-	// std::vector<MLMatrix<float> > dWeights;
-	// std::vector<MLMatrix<float> > dBiases;
 	bool _better = false;
 	_batchSize = batchSize;
 	if (_batchSize >= _nTrain) _batchSize = max(1, _nTrain / 5);
@@ -1675,8 +1694,8 @@ void MLP::run(std::vector<std::vector<float> > x0, std::vector<std::vector<float
 
 // Loop over minibatch
 			for (int d = 0; d < batchSize; ++d) {
-				for (int i = 0; i < _nInputs; ++i)  x(i, 0) = x0[data + d][i];
-				for (int c = 0; c < _nClasses; ++c) y(c, 0) = y0[data + d][c];
+				for (int i = 0; i < _nInputs; ++i)  x(i, 0) = x0(data + d,i);
+				for (int c = 0; c < _nClasses; ++c) y(c, 0) = y0(data + d,c);
 				if (_verbose > 2) {
 					Serial.printf ("Batch %d:\n", d);
 					Serial.print ("x ="); x.print();
@@ -1688,16 +1707,13 @@ void MLP::run(std::vector<std::vector<float> > x0, std::vector<std::vector<float
 				err = error (y, yhat);
 				totalError += err;
 // Backward pass
-				// backward (dWeights, dBiases, yhat, y, d);
 				backward (yhat, y, d);
 			} // end batch
 // Update weights
-			// if (_bestEta) searchEta (x, y, err, dWeights, dBiases, dWeightsOld, dBiasesOld);
-			// else update (Weights, dWeights, dWeightsOld, Biases, dBiases, dBiasesOld, batchSize);
 			if (_bestEta) searchEta (x, y, err);
 			else update (batchSize);
 			data += batchSize;
-			if (_nData - data < batchSize) batchSize = _nData - data;
+			if (_nTrain - data < batchSize) batchSize = _nTrain - data;
 		} // end data
 
 		_currError = totalError / _nTrain;
@@ -1721,7 +1737,7 @@ void MLP::run(std::vector<std::vector<float> > x0, std::vector<std::vector<float
 			++ _nDots;
 			if (_nDots > 5 && _shuffleDataset && rand01() < 0.25f) {
 				Serial.println ("Shuffling training dataset");
-				shuffleDataset (x0, y0, 0, _nData);
+				shuffleDataset (x0, y0, 0, _nTrain);
 			}
 		}
 		if (!_stopTotalError && _currError < stopError) break;
@@ -1734,14 +1750,12 @@ void MLP::run(std::vector<std::vector<float> > x0, std::vector<std::vector<float
 			// First prune phase : error < 6 * _stopError
 			if (pruneEpochs == 0 && _currError < 4 * _stopError) {
 				++pruneEpochs;
-				pruneInactive();
-				size();
+				if (pruneAll()) size();
 			}
 			// Second prune phase : error < 3 * _stopError
 			if (pruneEpochs == 1 && _currError < 2 * _stopError) {
 				++pruneEpochs;
-				pruneInactive();
-				size();
+				if (pruneInactive() != 0) size();
 			}
 		}
 
@@ -1766,37 +1780,37 @@ void MLP::run(std::vector<std::vector<float> > x0, std::vector<std::vector<float
 	}
 }
 
+// MLMatrix<float> MLP::predict (MLMatrix<float> x)
+// {
+// 	if (_verbose > 1) Serial.println("Prediction...");
+// 	MLMatrix<float> yhat;
+// 	normalize(x, _norm);
+// 	for (int k = 0; k < _nLayers - 1; ++k) {
+// 		yhat = Weights[k] * x + Biases[k];
+// 		yhat = activation(yhat, _activations[k]);
+// 		x = yhat;
+// 	}
+// 	deNorm (yhat, _norm);
+// 	return yhat;
+// }
+
+// MLMatrix<float> MLP::predict_nonorm (MLMatrix<float> x)
 MLMatrix<float> MLP::predict (MLMatrix<float> x)
 {
-	if (_verbose > 1) Serial.println("Prediction...");
+	if (_verbose > 2) Serial.println("Prediction...");
 	MLMatrix<float> yhat;
-	normalize(x, _norm);
 	for (int k = 0; k < _nLayers - 1; ++k) {
 		yhat = Weights[k] * x + Biases[k];
 		yhat = activation(yhat, _activations[k]);
 		x = yhat;
 	}
-	deNorm (yhat, _norm);
 	return yhat;
 }
 
-MLMatrix<float> MLP::predict_nonorm (MLMatrix<float> x)
-{
-	if (_verbose > 1) Serial.println("Prediction...");
-	MLMatrix<float> yhat;
-	// normalize(x, _norm);
-	for (int k = 0; k < _nLayers - 1; ++k) {
-		yhat = Weights[k] * x + Biases[k];
-		yhat = activation(yhat, _activations[k]);
-		x = yhat;
-	}
-	// deNorm (yhat, _norm);
-	return yhat;
-}
-
-float MLP::testNet(const std::vector<std::vector<float> > x0, const std::vector<std::vector<float> > y0, const uint16_t begin, const uint16_t number, const bool details)
+float MLP::testNet(const MLMatrix<float> x0, const MLMatrix<float> y0, const uint16_t begin, const uint16_t number, const bool details)
 {
 	float error = 0.0f;
+	if (_verbose > 1) Serial.println("Test Net...");
 	MLMatrix<float> x(_nInputs, 1, 0);
 	MLMatrix<float> y(_nClasses, 1, 0);
 	MLMatrix<float> errGlob(number, 1, 0);
@@ -1806,9 +1820,10 @@ float MLP::testNet(const std::vector<std::vector<float> > x0, const std::vector<
 	int idh0, idh1, idy0, idy1, correct = 0;
 	int nDiff = 0;
 	for (unsigned i = 0; i < number; ++i) {
-		for (unsigned j=0; j<_nInputs; ++j)  x(j,0) = x0[begin + i][j];
-		for (unsigned j=0; j<_nClasses; ++j) y(j,0) = y0[begin + i][j]; // ground truth
-		MLMatrix<float> yhat = predict_nonorm (x);
+		for (unsigned j=0; j<_nInputs; ++j)  x(j,0) = x0(begin + i,j);
+		for (unsigned j=0; j<_nClasses; ++j) y(j,0) = y0(begin + i,j); // ground truth
+		// MLMatrix<float> yhat = predict_nonorm (x);
+		MLMatrix<float> yhat = predict (x);
 		float err = 0.0f;
 		if (_enSoftmax) {
 			yhat.indexMax(idh0, idh1);
@@ -1827,6 +1842,7 @@ float MLP::testNet(const std::vector<std::vector<float> > x0, const std::vector<
 			if (diff * _nClasses < 1.0f) ++ nDiff;
 
 		} else {
+			// Serial.printf("Test %d: expected %f predicted %f (%f)\n",i,y(0,0),yhat(0,0), abs(y(0,0)-yhat(0,0)));
 			for (int c = 0; c < _nClasses; ++c) 
 				err += abs (y(c, 0) - yhat(c, 0));
 		}
@@ -1862,9 +1878,12 @@ float MLP::testNet(const std::vector<std::vector<float> > x0, const std::vector<
 				Serial.printf (" (%5.1f%%)\n",Confusion(i,i) * 100.0f / sumI);
 			}
 			Serial.print("Prec: ");
-			for (unsigned i=0; i<_nClasses; ++i)
+			int totConf = 0;
+			for (unsigned i=0; i<_nClasses; ++i) {
+				totConf += Confusion(i,i);
 				Serial.printf ("%4.0f%%", 100.0f * Confusion(i,i) / Prec(i,0));
-			Serial.println();
+			}
+			Serial.printf(" ->%5.1f%%\n", 100.0f * totConf / number);
 			Serial.printf ("Low precision prediction : %5.1f%%\n", 100.0f * nDiff / number);
 		}
 	}
@@ -1874,7 +1893,7 @@ float MLP::testNet(const std::vector<std::vector<float> > x0, const std::vector<
 uint16_t MLP::pruneInactive()
 {
 	// Search for neurons with all zero weights (inactive neurons)
-	Serial.println("Pruning inactive neurons");
+	Serial.println("Pruning inactive neurons:");
 	int inact = 0;
 	std::vector<int> inacLayers;
 	std::vector<int> inacNeurons;
@@ -1882,10 +1901,10 @@ uint16_t MLP::pruneInactive()
 		MLMatrix<float> W(Weights[k]);
 		uint16_t n = W.get_rows();
 		uint16_t cols = W.get_cols();
-		for (unsigned i=0; i<n; ++i) {
+		for (unsigned i=0; i < n; ++i) {
 			uint16_t nZ = W.countZeroRow(i);
 			if (nZ == cols) {
-				Serial.printf("Layer %d : neuron %d is inactive\n", k+1,i);
+				Serial.printf("\tLayer %d : neuron %d is inactive\n", k + 1,i);
 				inacLayers.push_back(k);
 				inacNeurons.push_back(i);
 				++inact;
@@ -1894,26 +1913,22 @@ uint16_t MLP::pruneInactive()
 	}
 	if (inact == 0) Serial.println ("No inactive neuron found.");
 	else {
-		for (unsigned i=0; i<inacLayers.size(); ++i) {
+		for (unsigned i = 0; i < inacLayers.size(); ++i) {
 			uint16_t layer = inacLayers[i];
 			uint16_t neuron = inacNeurons[i] - i;
-			if (_verbose > 1) Serial.printf("Removing neuron %d of layer %d\n",neuron,layer + 1);
+			if (_verbose > 1) Serial.printf("Removing neuron %d of layer %d\n", neuron, layer + 1);
 			removeNeuron(layer + 1, neuron);
-			// Weights[layer].removeRow(neuron);
-			// Biases[layer].removeRow(neuron);
-			// Weights[layer+1].removeCol(neuron);
-			// --_neurons[layer+1];
 		}
-		if (_verbose > 0) Serial.printf("Succesfully pruned %d neurons\n",inact);
+		if (_verbose > 0) Serial.printf("Succesfully pruned %d neurons\n", inact);
 	}
 	return inact;
 }
 
 uint16_t MLP::pruneLowAct()
 {
-	// Search for neurons with low activity: more than 3/4 zeros in row
-	// (set this threshold with setHeurPruning)
-	Serial.println("Pruning neurons with low activity");
+	// Search for neurons with low activity: more than XXX % weights are zeros in row
+	// (set this XXX threshold with setHeurPruning)
+	Serial.println("Pruning neurons with low activity:");
 	int lowact = 0;
 	std::vector<int> lowacLayers;
 	std::vector<int> lowacNeurons;
@@ -1921,10 +1936,10 @@ uint16_t MLP::pruneLowAct()
 		MLMatrix<float> W(Weights[k]);
 		uint16_t size = W.get_cols();
 		if (size > 6) { // Do not prune thin layers
-			for (unsigned i=0; i<W.get_rows(); ++i) {
+			for (unsigned i = 0; i < W.get_rows(); ++i) {
 				uint16_t n = W.countZeroRow(i);
-				if (n >= int(_pruningThreshold * size)) {
-					Serial.printf("Layer %d : neuron %d can be pruned (%d)\n", k+1,i,n);
+				if (n > int(_pruningThreshold * size)) {
+					Serial.printf("\tLayer %d : neuron %d can be pruned (%d)\n", k + 1, i, n);
 					lowacLayers.push_back(k);
 					lowacNeurons.push_back(i);
 					++lowact;
@@ -1934,15 +1949,11 @@ uint16_t MLP::pruneLowAct()
 	}
 	if (lowact == 0) Serial.println ("No low activity neuron found.");
 	else {
-		for (unsigned i=0; i<lowacLayers.size(); ++i) {
+		for (unsigned i = 0; i < lowacLayers.size(); ++i) {
 			uint16_t layer = lowacLayers[i];
 			uint16_t neuron = lowacNeurons[i] - i;
 			removeNeuron(layer + 1, neuron);
-			// Weights[layer].removeRow(neuron);
-			// Biases[layer].removeRow(neuron);
-			// Weights[layer+1].removeCol(neuron);
-			// --_neurons[layer+1];
-			if (_verbose > 1) Serial.printf("Removing neuron %d of layer %d\n",neuron,layer+1);
+			if (_verbose > 1) Serial.printf("Removing neuron %d of layer %d\n", neuron, layer + 1);
 		}
 	}
 	return lowact;
@@ -1965,7 +1976,7 @@ bool MLP::pruneAll()
 	return pruned;
 }
 
-void MLP::removeNeuron (int layer, int number)
+void MLP::removeNeuron (const int layer, const int number)
 {
 	if (layer == 0) {
 		Serial.println("Prune error: cannot prune input layer !");
@@ -1975,14 +1986,17 @@ void MLP::removeNeuron (int layer, int number)
 		Serial.println("Prune error: cannot prune output layer !");
 		return;
 	}
+	// Weights
 	Weights[layer - 1].removeRow(number);
 	Biases[layer - 1].removeRow(number);
 	Weights[layer].removeCol(number);
+	// Gradients
 	dWeights[_nLayers - layer - 1].removeRow(number);
 	dBiases[_nLayers - layer - 1].removeRow(number);
 	dWeights[_nLayers - layer - 2].removeCol(number);
 	dWeightsOld[_nLayers - layer - 1].removeRow(number);
 	dBiasesOld[_nLayers - layer - 1].removeRow(number);
 	dWeightsOld[_nLayers - layer - 2].removeCol(number);
+	// Neuron
 	--_neurons[layer];
 }

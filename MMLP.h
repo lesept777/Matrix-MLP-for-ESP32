@@ -91,35 +91,35 @@ class MLP
     ~MLP();
 
 // Hyper parameters
-    // learning rate and momentum
+// learning rate and momentum
     void setHyper (const float = 0.5f, const float = 0.1f);
-    // parameters for optimization of training
-    void displayHeuristics ();
-    void setHeuristics (uint32_t);
-    void setHeurShuffleDataset (bool);
-    void setHeurZeroWeights (bool, float);
-    void setHeurRegulL1 (bool, float = 1.0f);
-    void setHeurRegulL2 (bool, float = 1.0f);
-    void setHeurChangeMomentum (bool, float = 0.1f, float = 1.5f);
-    void setHeurChangeGain (bool, float = 0.5f, float = 2.0f);
-    void setHeurInitialize (bool);
-    void setHeurGradScale (bool, float);
-    void setHeurGradClip (bool, float);
-    void setHeurPruning (bool, float);
+// parameters for optimization of training
+    void displayHeuristics     ();
+    void setHeuristics         (uint32_t);
+    void setHeurShuffleDataset (const bool);
+    void setHeurZeroWeights    (const bool, const float = 0.15f);
+    void setHeurRegulL1        (const bool, const float = 1.0f);
+    void setHeurRegulL2        (const bool, const float = 1.0f);
+    void setHeurChangeMomentum (const bool, const float = 0.1f, const float = 1.5f);
+    void setHeurChangeGain     (const bool, const float = 0.5f, const float = 2.0f);
+    void setHeurInitialize     (const bool);
+    void setHeurGradScale      (const bool, const float);
+    void setHeurGradClip       (const bool, const float);
+    void setHeurPruning        (const bool, const float = 0.85f);
 
-    // Activation functions of each layer
+// Activation functions of each layer
     void setActivations (const int *);
-    void setCost (const uint8_t);
+    void setCost        (const uint8_t);
 
 // Training parameters
-    void setVerbose   (uint8_t);
-    void setEpochs    (int);
-    void setBatchSize (int);
-    void setMomentum  (float);
-    void setEta       (float);
-    void setEtaRange (float, float);
-    void setMomRange  (float, float);
-    void setGain      (float);
+    void setVerbose    (const uint8_t);
+    void setEpochs     (const int);
+    void setBatchSize  (const int);
+    void setMomentum   (const float);
+    void setEta        (const float);
+    void setEtaRange   (const float, const float);
+    void setMomRange   (const float, const float);
+    void setGain       (const float);
 
     int   getEpochs    ();
     int   getBatchSize ();
@@ -130,55 +130,55 @@ class MLP
 
 // Dataset functions
     void setTrainTest (float, float, float);
-    void createDataset (const std::vector<std::vector<float> > , std::vector<std::vector<float> > &, const int);
-    void shuffleDataset (std::vector<std::vector<float> > &, std::vector<std::vector<float> > &, uint16_t, uint16_t);
-    void createDatasetFromArray (std::vector<std::vector<float> > &, std::vector<std::vector<float> > &, const float *, const float *, const int);
-    void createDatasetFromVector (std::vector<std::vector<float> > &, std::vector<std::vector<float> > &, const std::vector<float>, const std::vector<float>);
-    void normalizeDataset (std::vector<std::vector<float> > &, std::vector<std::vector<float> > &, const uint8_t = 0);
-    int  readCsvFromSpiffs (const char* const, std::vector<std::vector<float> >&, std::vector<std::vector<float> >&);
+    void createDataset (const MLMatrix<float> , MLMatrix<float> &, const int);
+    void shuffleDataset (MLMatrix<float> &, MLMatrix<float> &, uint16_t, uint16_t);
+    void createDatasetFromArray (MLMatrix<float> &, MLMatrix<float> &, const float *, const float *, const int);
+    void createDatasetFromVector (MLMatrix<float> &, MLMatrix<float> &, const std::vector<float>, const std::vector<float>);
+    void normalizeDataset (MLMatrix<float> &, MLMatrix<float> &, const uint8_t = 0);
+    int  readCsvFromSpiffs (const char* const, MLMatrix<float> &, MLMatrix<float> &);
 
 // Train and prediction functions
-    void run (std::vector<std::vector<float> >, std::vector<std::vector<float> >, int, int, float);
+    void run (MLMatrix<float>, MLMatrix<float>, int, int, float);
     MLMatrix<float> predict (MLMatrix<float>);
+    // MLMatrix<float> predict_nonorm (MLMatrix<float>);
     uint32_t estimateDuration (int);
 
 // Perceptron functions
     MLMatrix<float> forward (MLMatrix<float>, bool = true);
     float error (MLMatrix<float>, MLMatrix<float>) const;
-    // void  backward (std::vector<MLMatrix<float> > &, std::vector<MLMatrix<float> > &, const MLMatrix<float>, const MLMatrix<float>, const int);
-    // void  update (std::vector<MLMatrix<float> > &, std::vector<MLMatrix<float> >, std::vector<MLMatrix<float> >, std::vector<MLMatrix<float> > &, std::vector<MLMatrix<float> >, std::vector<MLMatrix<float> >, const int);
     void  backward (const MLMatrix<float>, const MLMatrix<float>, const int);
-    void  update (const int);
-    float testNet(const std::vector<std::vector<float> >, const std::vector<std::vector<float> >, const uint16_t, const uint16_t, const bool);
+    void  update   (const int);
+    float testNet  (const MLMatrix<float>, const MLMatrix<float>, const uint16_t, const uint16_t, const bool);
 
 // Weights functions
-    void  randomWeights (float = -0.5f, float = 0.5f);
-    void  normalize (MLMatrix<float> &, const uint8_t);
-    void  deNorm (MLMatrix<float> &, const uint8_t);
-    void  searchBestWeights (const std::vector<std::vector<float> >, const std::vector<std::vector<float> >);
-    void  saveWeights ();
-    void  restoreWeights ();
-    float regulL1Weights();
-    float regulL2Weights();
-    int   numberOfWeights();
-    void  displayWeights();
-    float getWeight (int, int, int);
-    int   setWeight (int, int, int, float);
-    void  statWeights();
-    float meanWeights();
-    float stdevWeights (float);
+    void  randomWeights     (float = -0.5f, float = 0.5f);
+    void  normalize         (MLMatrix<float> &, const uint8_t);
+    void  deNorm            (MLMatrix<float> &, const uint8_t);
+    // void  deNorm            (std::vector<std::vector<float> > &, const uint8_t);
+    void  searchBestWeights (const MLMatrix<float>, const MLMatrix<float>);
+    void  saveWeights     ();
+    void  restoreWeights  ();
+    float regulL1Weights  ();
+    float regulL2Weights  ();
+    int   numberOfWeights ();
+    void  displayWeights  ();
+    float getWeight       (int, int, int);
+    int   setWeight       (const int, const int, const int, const float);
+    void  statWeights     ();
+    float meanWeights     ();
+    float stdevWeights    (const float);
 
 // Misc functions
-    int   size () const;
-    void  displayNetwork ();
-    void  netSave (const char* const);
-    bool  netLoad (const char* const);
+    int   size            () const;
+    void  displayNetwork  ();
+    void  netSave         (const char* const);
+    bool  netLoad         (const char* const);
 
 // Pruning
-    bool     pruneAll();
+    bool     pruneAll     ();
     uint16_t pruneInactive();
-    uint16_t pruneLowAct();
-    void     removeNeuron (int, int);
+    uint16_t pruneLowAct  ();
+    void     removeNeuron (const int, const int);
 
   private:
 
@@ -190,7 +190,7 @@ class MLP
     float _trainTest = 0.8f;
 
     float _currError = 100.0f;
-    float _etaMin    = 0.001f;
+    float _etaMin    = 0.01f;
     float _minError  = 1000000.0f;
     float _wmin      = -0.5f;
     float _wmax      =  0.5f;
@@ -283,7 +283,6 @@ class MLP
     MLMatrix<float> LogLikelihood(MLMatrix<float>);
     MLMatrix<float> activation (MLMatrix<float>, const uint8_t);
     MLMatrix<float> dActivation (MLMatrix<float>, const uint8_t);
-    MLMatrix<float> predict_nonorm (MLMatrix<float>);
 
     float CrossEntropy (const MLMatrix<float>, const MLMatrix<float>);
     void  heuristics (int, int, bool);
