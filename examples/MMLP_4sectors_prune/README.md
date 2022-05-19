@@ -98,7 +98,7 @@ Prec:  100%  93% 100%  83% -> 94.0%
 
 No pruning is done at test phase.
 
-In case the pruning degrades the results, running again with transfer learning from the saved network can again improve the performance. This is done by uncommenting the following lines in the ino file:
+In case the pruning degrades the results, running again with transfer learning from the saved network can improve the performance. This is done by uncommenting the following lines in the ino file:
 
 ```
     bool initialize = !Net.netLoad(networkFile);
