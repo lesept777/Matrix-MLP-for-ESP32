@@ -21,11 +21,9 @@ int sector (float x, float y) {
 
 // Declare the network
 int Neurons[] = {2, 30, 20, 4};
-int Activations[] = {SIGMOID, SIGMOID, SOFTMAX};
 
 void setup() {
   Serial.begin(115200);
-  delay(200);
   MLP Net(Neurons, 4, 1);
   Serial.println();
   if (!LITTLEFS.begin(FORMAT_LITTLEFS_IF_FAILED)) {
@@ -33,47 +31,47 @@ void setup() {
     return;
   }
 
+  // Create the dataset
   int nData = 300;
-  std::vector<std::vector<float> > dataX, dataY;
-  // pick random points in [0,1]x[0,1] and
+  MLMatrix<float> dataX(nData, 2), dataY(nData, 4, 0);
+  // draw random points in [0,1]x[0,1] and
   // set output to 0 - 3 depending on position
   for (int i = 0; i < nData; i++) {
     float xx = random(100) / 99.;
     float yy = random(100) / 99.;
     int sec = sector(xx, yy);
-    std::vector<float> X;
-    X.push_back(xx);
-    X.push_back(yy);
-    std::vector<float> S;
-    for (byte j = 0; j < 4; ++j) S.push_back((j == sec) ? 1 : 0); // one-hot vector
-    dataX.push_back(X);
-    dataY.push_back(S);
+    dataX(i, 0) = xx;
+    dataX(i, 1) = yy;
+    dataY(i, sec) = 1;
   }
   Net.createDataset (dataX, dataY, nData);
+  Net.setTrainTest(4, 1, 1);
+  Net.normalizeDataset(dataX, dataY, 1);
 
+  // Set parameters
+  int Activations[] = {SIGMOID, SIGMOID, SOFTMAX};
   Net.setActivations(Activations);
   // Net.setCost(CROSSENTROPY);
   Net.setHyper(0.2f, 0.5f); // LR & momentum
   Net.size();
 
-//  bool initialize = !Net.netLoad(networkFile);
 
-  // Training
+  // Training options
   long heuristics = H_INIT_OPTIM +
                     H_MUTA_WEIGH +
                     H_CHAN_LRLOG +
                     H_CHAN_SGAIN +
                     H_GRAD_CLIP  +
                     H_ZERO_WEIGH +
-//                    H_DATA_SUBSE +
+                    // H_DATA_SUBSE +
                     H_SELE_WEIGH;
   Net.setHeuristics(heuristics);
-//  Net.setHeurInitialize(initialize); // No need to init a new network if we read it from SPIFFS
+  //  bool initialize = !Net.netLoad(networkFile);
+  //  Net.setHeurInitialize(initialize); // No need to init a new network if we read it from SPIFFS
   // Display the heuristics parameters
   Net.displayHeuristics();
 
-  Net.setTrainTest(4, 1, 1);
-  Net.normalizeDataset(dataX, dataY, 1);
+  // Train...
   Net.run (dataX, dataY, 100, 10, 0.03f);
   Net.netSave(networkFile);
 
