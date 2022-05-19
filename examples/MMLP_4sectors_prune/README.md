@@ -68,9 +68,9 @@ The file [Results.txt](./Results.txt) shows the results obtained for the 4 secto
 
 The initial network has 794 total weights and biases (synapses), with 2 hidden layers of 30 and 20 neurons. The objective score is set to 0.04. When the score passes under 0.16, the first pruning is run: 6 neurons are inactive, and the number of synapses is reduced to 656 (-17%).
 
-The training stops before the score can reach 0.08 for a second pruning phase.
+The second pruning phase is run when the score reaches 0.08 but no action is taken.
 
-The confusion matrix is printed, then the test-phase pruning is run, but no inactive or low activity neurons are found. So the network stays at 656 synapses. The validation on unknown data shows 100% performance. There are still more than 56% synapses that are equal to 0.
+The confusion matrix is printed, then the test-phase pruning is run, but no inactive or low activity neurons are found. So the network stays at 656 synapses. The validation on unknown data shows 100% performance. There are still more almost 60% synapses that are equal to 0.
 
 Another example is provided: [Results2.txt](./Results2.txt). We add:
 
@@ -85,42 +85,20 @@ before the line
   Net.displayHeuristics();
 ```
 
-to change the thresholds. 9 neurons are pruned in the first phase. The confusion matrix is:
+to change the thresholds. 11 neurons are pruned in the first phase. The confusion matrix is:
 
 ```
 TR/PR    0    1    2    3  (Recall)
-  0 :   15    0    0    0  (100.0%)
-  1 :    0   10    0    0  (100.0%)
-  2 :    0    0   12    0  (100.0%)
-  3 :    0    2    0   11  ( 84.6%)
-Prec:  100%  83% 100% 100%  96.0%
+  0 :   13    1    0    0  ( 92.9%)
+  1 :    0   14    0    1  ( 93.3%)
+  2 :    0    0   10    1  ( 90.9%)
+  3 :    0    0    0   10  (100.0%)
+Prec:  100%  93% 100%  83% -> 94.0%
 ```
 
-Then comes the pruning at test phase: 2 low activity neurons are pruned in the second hidden layer, leading to a network with 529 synapses (-33%). The results are worse:
+No pruning is done at test phase.
 
-```
-TR/PR    0    1    2    3  (Recall)
-  0 :    9    2    4    0  ( 60.0%)
-  1 :    0   10    0    0  (100.0%)
-  2 :    0    0   12    0  (100.0%)
-  3 :    0    1    0   12  ( 92.3%)
-Prec:  100%  77%  75% 100%  86.0%
-```
-
-with an average test error jumping from 8% to 24% on 50 samples. However, the validation on unknown data remains at 100%. This shows the importance of the value of the threshold for low activity neurons pruning.
-
-However, running again with transfer learning from the saved network leads to the following confusion matrix:
-
-```
-TR/PR    0    1    2    3  (Recall)
-  0 :   16    0    0    0  (100.0%)
-  1 :    0    8    0    0  (100.0%)
-  2 :    1    0   14    0  ( 93.3%)
-  3 :    0    0    0   11  (100.0%)
-Prec:   94% 100% 100% 100% ->  98.0%
-```
-
-This is done by uncommenting the following lines in the ino file:
+In case the pruning degrades the results, running again with transfer learning from the saved network can again improve the performance. This is done by uncommenting the following lines in the ino file:
 
 ```
     bool initialize = !Net.netLoad(networkFile);
@@ -133,5 +111,3 @@ and setting the threshold of low activity neurons to 100% to cancel its action:
 ```
     Net.setHeurPruning(true, 1.0);
 ```
-
-The average test error is now back to 4% and the validation score to 100%. The network has still more than 60% weights equal to 0.
