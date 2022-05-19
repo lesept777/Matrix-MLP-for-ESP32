@@ -21,7 +21,6 @@ int sector (float x, float y) {
 
 // Declare the network
 int Neurons[] = {2, 30, 20, 1};
-int Activations[] = {SIGMOID, SIGMOID, RELU};
 MLP Net(Neurons, 4, 1);
 
 void setup() {
@@ -34,31 +33,29 @@ void setup() {
   }
 
   int nData = 300;
-  std::vector<std::vector<float> > dataX, dataY;
+  MLMatrix<float> dataX(nData, 2), dataY(nData, 1);
   // draw random points in [0,1]x[0,1] and
   // set output to 0 - 3 depending on position
   for (int i = 0; i < nData; i++) {
     float xx = random(100) / 99.;
     float yy = random(100) / 99.;
     int sec = sector(xx, yy);
-    std::vector<float> X;
-    X.push_back(xx);
-    X.push_back(yy);
-    std::vector<float> S;
-    S.push_back(sec);
-    dataX.push_back(X);
-    dataY.push_back(S);
+    dataX(i, 0) = xx;
+    dataX(i, 1) = yy;
+    dataY(i, 0) = sec;
   }
   Net.createDataset (dataX, dataY, nData);
+  Net.setTrainTest(4, 1, 1);
+  Net.normalizeDataset(dataX, dataY, 1);
 
+  // Set parameters
+  int Activations[] = {SIGMOID, SIGMOID, RELU};
   Net.setActivations(Activations);
-  Net.setCost(MSE);
-  Net.setHyper(0.2f, 0.05f);
+  Net.setHyper(0.2f, 0.05f); // LR, momentum
   Net.size();
 
-  //  bool initialize = true;//!Net.netLoad(networkFile);
 
-  // Training
+  // Training options
   long heuristics = H_INIT_OPTIM +
                     H_CHAN_WEIGH +
                     H_CHAN_LRLIN +
@@ -68,8 +65,7 @@ void setup() {
   // Display the heuristics parameters
   Net.displayHeuristics();
 
-  Net.setTrainTest(4, 1, 1);
-  Net.normalizeDataset(dataX, dataY, 1);
+  // Train...
   Net.run (dataX, dataY, 100, 10, 0.025f);
   Net.netSave(networkFile);
 
