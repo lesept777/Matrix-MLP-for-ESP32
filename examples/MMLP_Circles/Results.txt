@@ -1,0 +1,370 @@
+Processing dataset
+Sum of ratios is not 100% (600.0%): setting ratios to 0.67, 0.17, 0.17
+Dataset split in: 200 train + 50 validation + 50 test data
+Setting activations:
+	Layer 0: activation TANH
+	Layer 1: activation TANH
+	Layer 2: activation TANH
+	Layer 3: activation TANH
+	Layer 4: activation SOFTMAX
+Setting hyperparameters:
+- Learning rate = 0.200000
+- Momentum      = 0.050000
+Network's size:
+	Layer 0: 120 weights, 60 biases
+	Layer 1: 2400 weights, 40 biases
+	Layer 2: 1200 weights, 30 biases
+	Layer 3: 600 weights, 20 biases
+	Layer 4: 60 weights, 3 biases
+	Total number of synapses: 4533 (i.e. weights + biases)
+---------------------------
+Heuristics parameters:
+- Init with random weights
+- Select best weights at init
+- Shuffle dataset if needed
+- Slightly change weights if needed
+- Variable learning rate (linear scale from 0.200 to 0.010)
+---------------------------
+Batch size = 10
+Stopping if error < 0.100
+
+Running optimization
+Shuffling dataset...
+Creating a new network
+Searching best starting weights
+--> Found better weights (error = 1.1061)
+--> Found better weights (error = 1.0152)
+--> Found better weights (error = 0.8939)
+--> Found better weights (error = 0.8485)
+--> Found better weights (error = 0.7879)
+Estimated maximum duration : 1980.00 s for 100 epochs
+
+Epoch 1 	Average error :   0.4900 (validation   0.2800)
+Epoch 2 	Average error :   0.3050 (validation   0.4000)
+Epoch 3 	Average error :   0.2550 (validation   0.4200)
+Epoch 4 	Average error :   0.2100 (validation   0.3400)
+Epoch 5 	Average error :   0.2000 (validation   0.2800)
+Epoch 6 	Average error :   0.1500 (validation   0.2400)
+..
+Epoch 9 	Average error :   0.1400 (validation   0.1600)
+...
+Epoch 13 	Average error :   0.1200 (validation   0.0800)
+Epoch 14 	Average error :   0.0600 (validation   0.1000)
+
+Timer : 307.56 s
+
+Evaluation on test data (50 samples):
+ - Minimum value of error :   0.0000
+ - Maximum value of error :   1.0000
+ - Mean value of error    :   0.2000
+ - Std deviation of error :   0.4000
+ - L1 norm of error       :   1.0000
+ - L2 norm of error       :   3.1623
+Confusion matrix:
+TR/PR    0    1    2  (Recall)
+  0 :   17    2    0  ( 89.5%)
+  1 :    5   10    3  ( 55.6%)
+  2 :    0    0   13  (100.0%)
+Prec:   77%  83%  81% -> 80.0%
+Low precision prediction :   4.0%
+Average test error  :   0.2000
+Saving network in file /CirclesNetwork.txt
+
+Validation  0: expected 2, prediction 2 -->OK
+Validation  1: expected 2, prediction 2 -->OK
+Validation  2: expected 1, prediction 1 -->OK
+Validation  3: expected 0, prediction 0 -->OK
+Validation  4: expected 0, prediction 0 -->OK
+Validation  5: expected 2, prediction 2 -->OK
+Validation  6: expected 2, prediction 2 -->OK
+Validation  7: expected 2, prediction 2 -->OK
+Validation  8: expected 2, prediction 2 -->OK
+Validation  9: expected 2, prediction 2 -->OK
+Validation 10: expected 1, prediction 1 -->OK
+Validation 11: expected 1, prediction 1 -->OK
+Validation 12: expected 2, prediction 2 -->OK
+Validation 13: expected 2, prediction 2 -->OK
+Validation 14: expected 1, prediction 2 -->NOK
+Validation 15: expected 1, prediction 2 -->NOK
+Validation 16: expected 2, prediction 2 -->OK
+Validation 17: expected 2, prediction 2 -->OK
+Validation 18: expected 2, prediction 2 -->OK
+Validation 19: expected 0, prediction 0 -->OK
+
+---------------------------
+Network has 6 layers:
+Layer 0: 2 neurons
+Layer 1: 60 neurons, activation TANH, 120 weights, 60 biases
+Layer 2: 40 neurons, activation TANH, 2400 weights, 40 biases
+Layer 3: 30 neurons, activation TANH, 1200 weights, 30 biases
+Layer 4: 20 neurons, activation TANH, 600 weights, 20 biases
+Layer 5: 3 neurons, activation SOFTMAX, 60 weights, 3 biases
+Total number of synapses: 4533 (i.e. weights + biases)
+Average L1 norm of synapses: 0.271
+Average L2 norm of synapses: 0.050
+Average value of synapses:   -0.002
+Standard dev. of synapses:   0.316
+Ratio of synapses greater than 1:    0.02 %
+Ratio of synapses less than 1:      82.15 %
+Ratio of synapses less than 0.1:    15.97 %
+Ratio of synapses less than 0.01:    1.61 %
+Ratio of synapses less than 0.001:   0.24 %
+Ratio of synapses less than 0.0001:  0.00 % (sparsity)
+
+Final learning rate: 0.200
+Final Sigmoid gain : 1.000
+Final momentum     : 0.050
+---------------------------
+
+
+***********************************************************************************************
+
+Run transfer learning with lower objective score:
+1) uncomment
+    bool initialize = !Net.netLoad(networkFile);
+    Net.setHeurInitialize(initialize); // No need to init a new network if we read it from SPIFFS
+2) reduce objective value (from 0.1 to 0.03)
+  Net.run (dataX, dataY, 100, 10, 0.03f);
+
+Epoch 1 	Average error :   0.1500 (validation   0.1600)
+.
+Epoch 3 	Average error :   0.1300 (validation   0.1200)
+Random change to weights (amplitude 2.5%)
+Epoch 4 	Average error :   0.0850 (validation   0.1200)
+..
+Epoch 7 	Average error :   0.0700 (validation   0.1200)
+Epoch 8 	Average error :   0.0650 (validation   0.2200)
+....
+Epoch 13 	Average error :   0.0600 (validation   0.0600)
+.......Shuffling training dataset
+Shuffling dataset...
+...Shuffling training dataset
+Shuffling dataset...
+Restoring last saved weights
+.Shuffling training dataset
+Shuffling dataset...
+...Shuffling training dataset
+Shuffling dataset...
+
+Epoch 28 	Average error :   0.0400 (validation   0.1200)
+.........
+Epoch 38 	Average error :   0.0250 (validation   0.0600)
+
+Timer : 782.65 s
+
+Evaluation on test data (50 samples):
+ - Minimum value of error :   0.0000
+ - Maximum value of error :   1.0000
+ - Mean value of error    :   0.1000
+ - Std deviation of error :   0.3000
+ - L1 norm of error       :   1.0000
+ - L2 norm of error       :   2.2361
+Confusion matrix:
+TR/PR    0    1    2  (Recall)
+  0 :   18    1    0  ( 94.7%)
+  1 :    0   13    3  ( 81.2%)
+  2 :    0    1   14  ( 93.3%)
+Prec:  100%  87%  82% -> 90.0%
+Low precision prediction :   4.0%
+Average test error  :   0.1000
+Saving network in file /CirclesNetwork.txt
+
+Validation  0: expected 2, prediction 2 -->OK
+Validation  1: expected 2, prediction 2 -->OK
+Validation  2: expected 2, prediction 2 -->OK
+Validation  3: expected 2, prediction 2 -->OK
+Validation  4: expected 1, prediction 1 -->OK
+Validation  5: expected 2, prediction 2 -->OK
+Validation  6: expected 2, prediction 2 -->OK
+Validation  7: expected 1, prediction 1 -->OK
+Validation  8: expected 2, prediction 2 -->OK
+Validation  9: expected 2, prediction 2 -->OK
+Validation 10: expected 2, prediction 2 -->OK
+Validation 11: expected 2, prediction 2 -->OK
+Validation 12: expected 2, prediction 2 -->OK
+Validation 13: expected 2, prediction 2 -->OK
+Validation 14: expected 1, prediction 1 -->OK
+Validation 15: expected 2, prediction 2 -->OK
+Validation 16: expected 2, prediction 2 -->OK
+Validation 17: expected 1, prediction 1 -->OK
+Validation 18: expected 2, prediction 2 -->OK
+Validation 19: expected 1, prediction 1 -->OK
+
+---------------------------
+Network has 6 layers:
+Layer 0: 2 neurons
+Layer 1: 60 neurons, activation TANH, 120 weights, 60 biases
+Layer 2: 40 neurons, activation TANH, 2400 weights, 40 biases
+Layer 3: 30 neurons, activation TANH, 1200 weights, 30 biases
+Layer 4: 20 neurons, activation TANH, 600 weights, 20 biases
+Layer 5: 3 neurons, activation SOFTMAX, 60 weights, 3 biases
+Total number of synapses: 4533 (i.e. weights + biases)
+Average L1 norm of synapses: 0.293
+Average L2 norm of synapses: 0.061
+Average value of synapses:   -0.002
+Standard dev. of synapses:   0.350
+Ratio of synapses greater than 1:    0.44 %
+Ratio of synapses less than 1:      81.69 %
+Ratio of synapses less than 0.1:    15.93 %
+Ratio of synapses less than 0.01:    1.74 %
+Ratio of synapses less than 0.001:   0.18 %
+Ratio of synapses less than 0.0001:  0.02 % (sparsity)
+
+Final learning rate: 0.200
+Final Sigmoid gain : 1.000
+Final momentum     : 0.030
+---------------------------
+
+
+***********************************************************************************************
+
+Try to reduce the size of the network using H_TRAI_PRUNE option : just change
+  long heuristics = H_INIT_OPTIM +
+                    H_MUTA_WEIGH + 
+                    H_SELE_WEIGH +
+                    H_SHUF_DATAS +
+                    H_TRAI_PRUNE +  // <-- add this line
+		    H_ZERO_WEIGH +  // <-- add this line
+                    H_CHAN_LRLIN;
+and add before displayHeuristics()
+  Net.setHeurZeroWeights(true, 0.5);
+
+This leads to 3501 synapses (-22%).
+
+Epoch 1 	Average error :   0.0800 (validation   0.0600)
+---------------------------
+Attempting to prune the network...
+Pruning inactive neurons:
+	Layer 1 : neuron 6 is inactive
+	Layer 1 : neuron 8 is inactive
+	Layer 1 : neuron 15 is inactive
+	Layer 1 : neuron 21 is inactive
+	Layer 1 : neuron 25 is inactive
+	Layer 1 : neuron 26 is inactive
+	Layer 1 : neuron 47 is inactive
+	Layer 1 : neuron 56 is inactive
+Succesfully pruned 8 inactive neurons
+Pruning neurons with low activity:
+	Layer 2 : neuron 6 can be pruned (44)
+	Layer 3 : neuron 0 can be pruned (35)
+	Layer 3 : neuron 16 can be pruned (35)
+	Layer 4 : neuron 2 can be pruned (26)
+	Layer 4 : neuron 5 can be pruned (26)
+Succesfully pruned 5 low activity neurons
+Succesfully pruned 13 neurons.
+Network now has 3880 synapses (-13.59%)
+Network's size:
+	Layer 0: 102 weights, 51 biases
+	Layer 1: 1989 weights, 39 biases
+	Layer 2: 1092 weights, 28 biases
+	Layer 3: 504 weights, 18 biases
+	Layer 4: 54 weights, 3 biases
+	Total number of synapses: 3880 (i.e. weights + biases)
+Epoch 2 	Average error :   0.0450 (validation   0.1200)
+Pruning inactive neurons:
+No inactive neuron found.
+......
+Epoch 9 	Average error :   0.0400 (validation   0.1200)
+..........Restoring last saved weights
+.Shuffling training dataset
+Shuffling dataset...
+..
+Epoch 23 	Average error :   0.0350 (validation   0.0400)
+Epoch 24 	Average error :   0.0200 (validation   0.0400)
+
+Timer : 456.05 s
+
+Evaluation on test data (50 samples):
+ - Minimum value of error :   0.0000
+ - Maximum value of error :   1.0000
+ - Mean value of error    :   0.0800
+ - Std deviation of error :   0.2713
+ - L1 norm of error       :   1.0000
+ - L2 norm of error       :   2.0000
+Confusion matrix:
+TR/PR    0    1    2  (Recall)
+  0 :   14    0    0  (100.0%)
+  1 :    1   12    3  ( 75.0%)
+  2 :    0    0   20  (100.0%)
+Prec:   93% 100%  87% -> 92.0%
+Low precision prediction :   6.0%
+Average test error  :   0.0800
+---------------------------
+Attempting to prune the network...
+Pruning inactive neurons:
+	Layer 1 : neuron 40 is inactive
+Succesfully pruned 1 inactive neurons
+Pruning neurons with low activity:
+	Layer 2 : neuron 16 can be pruned (43)
+	Layer 3 : neuron 2 can be pruned (34)
+	Layer 3 : neuron 18 can be pruned (34)
+	Layer 3 : neuron 19 can be pruned (35)
+	Layer 4 : neuron 0 can be pruned (25)
+	Layer 4 : neuron 2 can be pruned (25)
+	Layer 4 : neuron 9 can be pruned (24)
+Succesfully pruned 7 low activity neurons
+Succesfully pruned 8 neurons.
+Network now has 3501 synapses (-9.77%)
+
+New evaluation on test data after pruning:
+ - Minimum value of error :   0.0000
+ - Maximum value of error :   1.0000
+ - Mean value of error    :   0.0800
+ - Std deviation of error :   0.2713
+ - L1 norm of error       :   1.0000
+ - L2 norm of error       :   2.0000
+Confusion matrix:
+TR/PR    0    1    2  (Recall)
+  0 :   14    0    0  (100.0%)
+  1 :    1   12    3  ( 75.0%)
+  2 :    0    0   20  (100.0%)
+Prec:   93% 100%  87% -> 92.0%
+Low precision prediction :   6.0%
+Average test error  :   0.0800
+
+Validation  0: expected 2, prediction 2 -->OK
+Validation  1: expected 2, prediction 2 -->OK
+Validation  2: expected 2, prediction 2 -->OK
+Validation  3: expected 2, prediction 2 -->OK
+Validation  4: expected 2, prediction 2 -->OK
+Validation  5: expected 1, prediction 1 -->OK
+Validation  6: expected 0, prediction 0 -->OK
+Validation  7: expected 2, prediction 2 -->OK
+Validation  8: expected 2, prediction 2 -->OK
+Validation  9: expected 2, prediction 2 -->OK
+Validation 10: expected 2, prediction 2 -->OK
+Validation 11: expected 2, prediction 2 -->OK
+Validation 12: expected 2, prediction 2 -->OK
+Validation 13: expected 2, prediction 2 -->OK
+Validation 14: expected 2, prediction 2 -->OK
+Validation 15: expected 2, prediction 2 -->OK
+Validation 16: expected 2, prediction 1 -->NOK
+Validation 17: expected 0, prediction 0 -->OK
+Validation 18: expected 2, prediction 2 -->OK
+Validation 19: expected 2, prediction 2 -->OK
+
+---------------------------
+Network has 6 layers:
+Layer 0: 2 neurons
+Layer 1: 50 neurons, activation TANH, 100 weights, 50 biases
+Layer 2: 38 neurons, activation TANH, 1900 weights, 38 biases
+Layer 3: 25 neurons, activation TANH, 950 weights, 25 biases
+Layer 4: 15 neurons, activation TANH, 375 weights, 15 biases
+Layer 5: 3 neurons, activation SOFTMAX, 45 weights, 3 biases
+Total number of synapses: 3501 (i.e. weights + biases)
+Average L1 norm of synapses: 0.158
+Average L2 norm of synapses: 0.051
+Average value of synapses:   -0.002
+Standard dev. of synapses:   0.318
+Ratio of synapses greater than 1:    1.06 %
+Ratio of synapses less than 1:      25.85 %
+Ratio of synapses less than 0.1:     0.00 %
+Ratio of synapses less than 0.01:    0.00 %
+Ratio of synapses less than 0.001:   0.00 %
+Ratio of synapses less than 0.0001: 73.09 % (sparsity)
+
+Final learning rate: 0.200
+Final Sigmoid gain : 1.000
+Final momentum     : 0.030
+---------------------------
+
