@@ -1,0 +1,114 @@
+Setting activations:
+	Layer 0: activation SIGMOID
+	Layer 1: activation SOFTMAX
+Setting hyperparameters:
+- Learning rate = 0.250000
+- Momentum      = 0.500000
+0.00
+0.00
+Processing dataset
+Read 150 data of 4 input
+Sum of ratios is not 100% (600.0%): setting ratios to 0.67, 0.17, 0.17
+Dataset split in: 100 train + 25 validation + 25 test data
+---------------------------
+Heuristics parameters:
+- Init with random weights
+- Select best weights at init
+- Begin training on a subset of the dataset
+- Slightly change weights if needed
+- Variable learning rate (linear scale from 0.250 to 0.010)
+- Random variable Sigmoid gain between 0.500 and 2.000
+---------------------------
+Batch size = 15
+Stopping if error < 0.010
+
+Running optimization
+Creating a new network
+Searching best starting weights
+--> Found better weights (error = 0.8333)
+--> Found better weights (error = 0.5000)
+--> Found better weights (error = 0.3333)
+Estimated maximum duration : 240.00 s for 400 epochs
+
+Epoch 1 	Average error :   1.0000 (validation   0.8000)
+.....
+Epoch 7 	Average error :   0.3000 (validation   0.4000)
+.......
+Epoch 15 	Average error :   0.1500 (validation   0.4000)
+........Random change to weights (amplitude 2.5%)
+....
+Epoch 28 	Average error :   0.1000 (validation   0.4000)
+............Heuristics: changing Sigmoid gain to 0.85
+.
+Epoch 42 	Average error :   0.0500 (validation   0.4000)
+Now training on the entire dataset
+Epoch 43 	Average error :   0.1500 (validation   0.3600)
+..
+Epoch 46 	Average error :   0.1000 (validation   0.3600)
+...
+Epoch 50 	Average error :   0.0500 (validation   0.3600)
+..................Heuristics: changing Sigmoid gain to 0.70
+.
+Epoch 70 	Average error :   0.0400 (validation   0.0400)
+......Heuristics: changing Sigmoid gain to 0.55
+............
+Epoch 89 	Average error :   0.0300 (validation   0.0400)
+Epoch 90 	Average error :   0.0200 (validation   0.0000)
+.......
+Epoch 98 	Average error :   0.0100 (validation   0.0000)
+.............................Heuristics: changing Sigmoid gain to 0.40
+..
+Epoch 130 	Average error :   0.0000 (validation   0.0000)
+
+Timer : 66.83 s
+
+Evaluation on test data (25 samples):
+ - Minimum value of error :   0.0000
+ - Maximum value of error :   1.0000
+ - Mean value of error    :   0.0800
+ - Std deviation of error :   0.2713
+ - L1 norm of error       :   1.0000
+ - L2 norm of error       :   1.4142
+Confusion matrix:
+TR/PR    0    1    2  (Recall)
+  0 :   10    0    0  (100.0%)
+  1 :    0    4    2  ( 66.7%)
+  2 :    0    0    9  (100.0%)
+Prec:  100% 100%  82% -> 92.0%
+Low precision prediction :  12.0%
+Average test error  :   0.0800
+Saving network in file /Network_Iris.txt
+
+Validation on randomly chosen data:
+Validation 0: prediction 1, expected 1 --> OK
+Validation 1: prediction 0, expected 0 --> OK
+Validation 2: prediction 0, expected 0 --> OK
+Validation 3: prediction 1, expected 1 --> OK
+Validation 4: prediction 0, expected 0 --> OK
+Validation 5: prediction 2, expected 2 --> OK
+Validation 6: prediction 0, expected 0 --> OK
+Validation 7: prediction 2, expected 2 --> OK
+Validation 8: prediction 2, expected 2 --> OK
+Validation 9: prediction 2, expected 2 --> OK
+
+---------------------------
+Network has 3 layers:
+Layer 0: 4 neurons
+Layer 1: 10 neurons, activation SIGMOID, 40 weights, 10 biases
+Layer 2: 3 neurons, activation SOFTMAX, 30 weights, 3 biases
+Total number of synapses: 83 (i.e. weights + biases)
+Average L1 norm of synapses: 1.298
+Average L2 norm of synapses: 1.670
+Average value of synapses:   -0.044
+Standard dev. of synapses:   1.827
+Ratio of synapses greater than 1:   42.17 %
+Ratio of synapses less than 1:      48.19 %
+Ratio of synapses less than 0.1:     9.64 %
+Ratio of synapses less than 0.01:    0.00 %
+Ratio of synapses less than 0.001:   0.00 %
+Ratio of synapses less than 0.0001:  0.00 % (sparsity)
+
+Final learning rate: 0.172
+Final Sigmoid gain : 0.400
+Final momentum     : 0.500
+---------------------------
