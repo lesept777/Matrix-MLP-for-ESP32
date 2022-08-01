@@ -8,6 +8,7 @@ New version of MLP, using matrix maths
 
 # News
 2022/05/18: The dataset is now created using Matrices, which accelerates the computations. More than 2x faster!
+2022/08/01: Important change. To prepare the quantification of neural networks (i.e. using weights stored as `int8_t` instead of `float`), I rewrote the matrix linear algebra library. It is called now `MatrixUT` and must be imported with: `#include "MatrixUT.hpp"` in the sketch.
 
 # Description
 This library is designed to be used with the Arduino IDE.
