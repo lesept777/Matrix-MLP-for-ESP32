@@ -18,7 +18,7 @@ MLP::MLP(const int *neurons, const int nLayers, const int verbose)
 	if (_verbose > 0) Serial.printf ("\n\nVerbose level : %d\n", _verbose);
 	_nLayers = nLayers;
 	if (_nLayers > MAX_LAYERS) Serial.printf ("Too many layers (%d), maximum is: %d\n",_nLayers, MAX_LAYERS);
-	for (uint8_t i = 0; i < _nLayers; ++i) _neurons[i] = neurons[i];
+	for (size_t i = 0; i < _nLayers; ++i) _neurons[i] = neurons[i];
 	_nInputs = _neurons[0];
 	_nClasses = _neurons[_nLayers - 1];
 
@@ -26,7 +26,7 @@ MLP::MLP(const int *neurons, const int nLayers, const int verbose)
 		Serial.println("Creating network:");
 		Serial.printf("%d layers\n",_nLayers);
 		Serial.printf("\tInput layer: %d neurons\n", _nInputs);
-		for (int i = 1; i < _nLayers -1; ++i)
+		for (size_t i = 1; i < _nLayers -1; ++i)
 			Serial.printf("\tHidden layer %d: %d neurons\n",i,_neurons[i]);
 		Serial.printf("\tOutput layer: %d neurons", _nClasses);
 	}
@@ -48,13 +48,15 @@ void MLP::randomWeights (float min, float max)
 }
 
 // Initialize weights & biases : random uniform or Xavier
-void MLP::initWeights () 
+void MLP::initWeights (float vmin, float vmax) 
 {
 	Weights.clear();
 	Biases.clear();
-	for (int k = 0; k < _nLayers - 1; ++k) {
-		MLMatrix<float> W(_neurons[k + 1], _neurons[k], _wmin, _wmax);
-		MLMatrix<float> B(_neurons[k + 1], 1, _wmin, _wmax);
+	if (_quadLayers) Weights2.clear();
+
+	for (size_t k = 0; k < _nLayers - 1; ++k) {
+		MLMatrix<float> W(_neurons[k + 1], _neurons[k], vmin, vmax);
+		MLMatrix<float> B(_neurons[k + 1], 1, vmin, vmax);
 
 		if (_xavier) { // Normal Xavier initialization
 				float mean = 0.0f;
@@ -67,8 +69,22 @@ void MLP::initWeights ()
 		Weights.push_back(W);
 		Biases.push_back(B);
 
+		if (_quadLayers) {
+			MLMatrix<float> W2(_neurons[k + 1], _neurons[k], vmin, vmax);
+			if (_xavier) {
+				float mean = 0.0f;
+				float std_dev = sqrt(2.0f / (_neurons[k + 1] + _neurons[k]));
+				W2.randomNormal(mean, std_dev);
+			}
+			Weights2.push_back(W2);
+		}
+
 		if (_verbose > 2) {
 			W.print();
+			if (_quadLayers) {
+				MLMatrix<float> W2 = Weights2.back();
+				W2.print();
+			}
 			B.print();
 		}
 	}
@@ -76,7 +92,7 @@ void MLP::initWeights ()
 
 void MLP::setActivations (const int *activations)
 {
-	for (uint8_t i = 0; i < _nLayers - 1; ++i) {
+	for (size_t i = 0; i < _nLayers - 1; ++i) {
 		_activations[i] = activations[i];
 		if (i != _nLayers - 2 && _activations[i] == SOFTMAX) {
 			Serial.printf ("Layer %d cannot use SOFTMAX activation");
@@ -86,7 +102,7 @@ void MLP::setActivations (const int *activations)
 
 	if (_verbose > 0) {
 		Serial.println ("Setting activations:");
-		for (uint8_t i = 0; i < _nLayers - 1; ++i)
+		for (size_t i = 0; i < _nLayers - 1; ++i)
 			Serial.printf("\tLayer %d: activation %s\n", i, ActivNames[_activations[i]]);
 	}
 
@@ -155,29 +171,33 @@ void MLP::setHeuristics (uint32_t heuristics)
 {
   _heuristics = heuristics;
   if (_heuristics != 0) {
-    _initialize     = _heuristics & H_INIT_OPTIM; // 0x000001
-    _changeWeights  = _heuristics & H_CHAN_WEIGH; // 0x000002
-    _mutateWeights  = _heuristics & H_MUTA_WEIGH; // 0x000004
-    _changeLRlin    = _heuristics & H_CHAN_LRLIN; // 0x000008
-    _changeLRlog    = _heuristics & H_CHAN_LRLOG; // 0x000010
-    _changeGain     = _heuristics & H_CHAN_SGAIN; // 0x000020
-    _changeMom      = _heuristics & H_CHAN_MOMEN; // 0x000040
-    _shuffleDataset = _heuristics & H_SHUF_DATAS; // 0x000080
-    _zeroWeights    = _heuristics & H_ZERO_WEIGH; // 0x000100
-    _stopTotalError = _heuristics & H_STOP_TOTER; // 0x000200
+    _initialize     = _heuristics & H_INIT_OPTIM; // 0x0000001
+    _changeWeights  = _heuristics & H_CHAN_WEIGH; // 0x0000002
+    _mutateWeights  = _heuristics & H_MUTA_WEIGH; // 0x0000004
+    _changeLRlin    = _heuristics & H_CHAN_LRLIN; // 0x0000008
+    _changeLRlog    = _heuristics & H_CHAN_LRLOG; // 0x0000010
+    _changeGain     = _heuristics & H_CHAN_SGAIN; // 0x0000020
+    _changeMom      = _heuristics & H_CHAN_MOMEN; // 0x0000040
+    _shuffleDataset = _heuristics & H_SHUF_DATAS; // 0x0000080
+    _zeroWeights    = _heuristics & H_ZERO_WEIGH; // 0x0000100
+    _stopTotalError = _heuristics & H_STOP_TOTER; // 0x0000200
     _xavier         = (_initialize) ? (_heuristics & H_INIT_XAVIE) : 0; // 0x000800 (not if reading from file)
     _selectWeights  = (!_initialize || _xavier) ? 0 : (_heuristics & H_SELE_WEIGH); // 0x000400 (not if reading from file)
-    _regulL1        = _heuristics & H_REG1_WEIGH; // 0x001000
-    _regulL2        = _heuristics & H_REG2_WEIGH; // 0x002000
-    _bestEta        = _heuristics & H_BEST_ETA  ; // 0x004000
-    _labelSmoothing = _heuristics & H_LABL_SMOOT; // 0x008000
-    _gradClip       = _heuristics & H_GRAD_CLIP ; // 0x010000
-    _gradScaling    = _heuristics & H_GRAD_SCALE; // 0x020000
-    _varMom         = _heuristics & H_CHAN_MOLIN; // 0x040000
-    _dataSubset     = _heuristics & H_DATA_SUBSE; // 0x080000
-    _prune_topk     = _heuristics & H_TOPK_PRUNE; // 0x100000
-    _prune_neurons  = _heuristics & H_TEST_PRUNE; // 0x200000
-    _prune_train    = _heuristics & H_TRAI_PRUNE; // 0x400000
+    _regulL1        = _heuristics & H_REG1_WEIGH; // 0x0001000
+    _regulL2        = _heuristics & H_REG2_WEIGH; // 0x0002000
+    _bestEta        = _heuristics & H_BEST_ETA  ; // 0x0004000
+    _labelSmoothing = _heuristics & H_LABL_SMOOT; // 0x0008000
+    _gradClip       = _heuristics & H_GRAD_CLIP ; // 0x0010000
+    _gradScaling    = _heuristics & H_GRAD_SCALE; // 0x0020000
+    _varMom         = _heuristics & H_CHAN_MOLIN; // 0x0040000
+    _dataSubset     = _heuristics & H_DATA_SUBSE; // 0x0080000
+    _prune_topk     = _heuristics & H_TOPK_PRUNE; // 0x0100000
+    _prune_neurons  = _heuristics & H_TEST_PRUNE; // 0x0200000
+    _prune_train    = _heuristics & H_TRAI_PRUNE; // 0x0400000
+    _dropout        = _heuristics & H_DROP_OUT  ; // 0x0800000
+    _changeBSize    = _heuristics & H_CHAN_BATSZ; // 0x1000000
+    _quadLayers     = _heuristics & H_QUAD_LAYER; // 0x2000000
+    _deepShift      = _heuristics & H_DEEP_SHIFT; // 0x4000000
   }
 }
 
@@ -203,12 +223,17 @@ void MLP::displayHeuristics ()
   if (_regulL2)         Serial.printf  ("- Use L2 weight regularization (lambda = %.3f)\n", _lambdaRegulL2);
   if (_bestEta)					Serial.println ("- Search for best learning rate at each epoch (experimental)");
   if (_labelSmoothing)  Serial.println ("- Label smoothing ON");
-  if (_gradClip)        Serial.printf  ("- Gradient clipping (clip value %.3f)\n", _gradClipValue);
+  if (_gradClip)        Serial.printf  ("- Gradient clipping (clip value over %.3f)\n", _gradClipValue);
   if (_gradScaling)     Serial.printf  ("- Use gradient scaling (Norm to %.3f)\n", _gradScale);
-  if (_prune_topk)			Serial.println ("- TopK prining ON");
+  if (_quadLayers)      Serial.println ("- Use quadratic layers");
+  if (_quadLayers) 		  { _dropout = false;}
+  if (_prune_topk)			Serial.println ("- TopK pruning ON");
   if (_prune_train)     _prune_neurons = true;
   if (_prune_train)     Serial.println ("- Prune inactive or low activity neurons during training phase");
   if (_prune_neurons)   Serial.println ("- Prune inactive or low activity neurons at test phase");
+  if (_dropout)	        Serial.printf  ("- Dropout, with probability %.2f\n", _dropout_prob);
+  if (_changeBSize)     Serial.println ("- Change batch size during training");
+  if (_deepShift)       Serial.println ("- Use Deep Shift quantization algorithm  (experimental...)");
   // if (_parallelRun)     Serial.println ("- Compute using both processors");
   // if (_enableSkip)      Serial.println ("- Layer skip enabled (ResNet like)");
   Serial.println("---------------------------");
@@ -332,9 +357,23 @@ void MLP::setHeurChangeGain (const bool val, const float minGain, const float ma
   _minGain       = minGain;
   _maxGain       = maxGain;
 }
-void MLP::setHeurPruning (const bool val, float const threshold){
+void MLP::setHeurPruning (const bool val, const float threshold){
 	_prune_neurons = val;
 	_pruningThreshold = threshold;
+}
+
+void MLP::setHeurTopK (const bool val, const float percent)
+{
+	_prune_topk = val;
+	_topKpcent  = percent; // in [0, 1]
+}
+
+void MLP::setBSizeRange (float minBS, float maxBS)
+{
+	if (minBS > 0.9) minBS = 0.9;
+	if (maxBS > 0.9) maxBS = 0.9;
+	_minBS = minBS;
+	_maxBS = maxBS;
 }
 
 
@@ -386,13 +425,22 @@ float MLP::dELu (const float x) {
 	float _alphaELU = 1.0f;
 	return (x > 0) ? 1.0f : _alphaELU + x;
 }
+float MLP::Swish (const float x) {
+	float beta = 4.0f / 30.0f;
+	return x * Sigmoid(beta * x);
+}
+float MLP::dSwish (const float x) {
+	float beta = 4.0f / 30.0f;
+	float y = Sigmoid(beta * x);
+	return beta * x * y + y * (1.0f - beta * x * y) ;
+}
 
 MLMatrix<float> MLP::SoftMax(const MLMatrix<float> x) {
 	MLMatrix<float> S(x, 0.0f);
 	float maxX = x.max();
 	float sum = 0.0f;
-	for (int i = 0; i < x.get_rows(); ++i) sum += exp(x(i, 0) - maxX);
-	for (int i = 0; i < x.get_rows(); ++i) S(i, 0) = exp(x(i, 0) - maxX) / sum;
+	for (size_t i = 0; i < x.get_rows(); ++i) sum += exp(x(i, 0) - maxX);
+	for (size_t i = 0; i < x.get_rows(); ++i) S(i, 0) = exp(x(i, 0) - maxX) / sum;
 	return S;
 }
 
@@ -404,7 +452,7 @@ MLMatrix<float> MLP::SoftMax(const MLMatrix<float> x) {
 // yhat: output of the forward pass, y: ground truth
 float MLP::CrossEntropy(const MLMatrix<float> yhat, const MLMatrix<float> y) {
 	float sum = 0.0f;
-	for (int i = 0; i < yhat.get_rows(); ++i) {
+	for (size_t i = 0; i < yhat.get_rows(); ++i) {
 		sum -=         y(i, 0)  * log(yhat(i, 0) + 1.0e-15);
 		sum -= (1.0f - y(i, 0)) * log(1.0f - yhat(i, 0) + 1.0e-15);
 	}
@@ -433,13 +481,19 @@ MLMatrix<float> MLP::LogLikelihood(MLMatrix<float> yhat) {
 *************************************/
 int MLP::size() const
 {
-	Serial.println("Network's size:");
+	Serial.printf ("Network has %d layers:\n", _nLayers);
 	int nbSynapses = 0;
-	for (int i = 0; i < _nLayers - 1; ++i) {
-		int nWeights = _neurons[i + 1] * _neurons[i]; // weights
-		int nBiases= _neurons[i + 1]; // biases
-		nbSynapses += (nWeights + nBiases);
-		if (_verbose > 0) Serial.printf("\tLayer %d: %d weights, %d biases\n",i, nWeights, nBiases);
+	for (size_t i = 0; i < _nLayers; ++i) {
+		if (i==0) {
+			if (_verbose > 0) Serial.printf("\tLayer %d: %d neurons\n",i, _neurons[i]);
+		} else {
+			int nWeights = _neurons[i] * _neurons[i-1]; // weights
+			if (_quadLayers) nWeights *= 2;
+			int nBiases= _neurons[i]; // biases
+			nbSynapses += (nWeights + nBiases);
+			if (_verbose > 0) Serial.printf("\tLayer %d: %2d neurons, activation %s, %d weights, %d biases\n",
+												i, _neurons[i], ActivNames[_activations[i-1]], nWeights, nBiases);			
+		}
 	}
 	Serial.printf("\tTotal number of synapses: %d (i.e. weights + biases)\n", nbSynapses);
 	return nbSynapses;
@@ -450,22 +504,9 @@ void MLP::displayNetwork()
 {
 	restoreWeights();
 	Serial.println("\n---------------------------");
-	Serial.printf ("Network has %d layers:\n", _nLayers);
-	int nbSynapses = 0;
-	for (int i = 0; i < _nLayers; ++i) {
-		if (i==0) {
-			Serial.printf("Layer %d: %d neurons\n",i, _neurons[i]);
-		} else {
-			int nWeights = _neurons[i] * _neurons[i-1]; // weights
-			int nBiases= _neurons[i]; // biases
-			nbSynapses += (nWeights + nBiases);
-			Serial.printf("Layer %d: %d neurons, activation %s, %d weights, %d biases\n",
-				i, _neurons[i], ActivNames[_activations[i-1]], nWeights, nBiases);			
-		}
-	}
-	Serial.printf("Total number of synapses: %d (i.e. weights + biases)\n", nbSynapses);
-	Serial.printf("Average L1 norm of synapses: %.3f\n",regulL1Weights() / numberOfWeights());
-	Serial.printf("Average L2 norm of synapses: %.3f\n",regulL2Weights() / numberOfWeights());
+	int nbSynapses = size();
+	Serial.printf("Average L1 norm of synapses: %.3f\n",regulL1Weights() / nbSynapses);
+	Serial.printf("Average L2 norm of synapses: %.3f\n",regulL2Weights() / nbSynapses);
 	float mean = meanWeights();
 	Serial.printf("Average value of synapses:   %.3f\n", mean);
 	Serial.printf("Standard dev. of synapses:   %.3f\n", stdevWeights(mean));
@@ -480,27 +521,40 @@ void MLP::displayNetwork()
 void MLP::statWeights()
 {
 	int great0 = 0;
-	int less0 = 0;
-	int less1 = 0;
-	int less2 = 0;
-	int less3 = 0;
-	int less4 = 0;
-	for (int k = 0; k < _nLayers - 1; ++k) {
+	int less0  = 0;
+	int less1  = 0;
+	int less2  = 0;
+	int less3  = 0;
+	int less4  = 0;
+	for (size_t k = 0; k < _nLayers - 1; ++k) {
 		// Weights
 		MLMatrix<float> W = Weights[k];
-		for (int i = 0; i < _neurons[k+1]; ++i) 
-		for (int j = 0; j < _neurons[k]; ++j) {
-			float ww = abs(W(i,j));
-			if (ww >= 1.0)                   ++great0;
-			if (ww < 1.0   && ww >= 0.1)     ++less0;
-			if (ww < 0.1   && ww >= 0.01)    ++less1;
-			if (ww < 0.01  && ww >= 0.001)   ++less2;
-			if (ww < 0.001 && ww >= 0.0001)  ++less3;
-			if (ww < 0.0001)                 ++less4;
+		for (size_t i = 0; i < _neurons[k+1]; ++i) 
+			for (size_t j = 0; j < _neurons[k]; ++j) {
+				float ww = abs(W(i,j));
+				if (ww >= 1.0)                   ++great0;
+				if (ww < 1.0   && ww >= 0.1)     ++less0;
+				if (ww < 0.1   && ww >= 0.01)    ++less1;
+				if (ww < 0.01  && ww >= 0.001)   ++less2;
+				if (ww < 0.001 && ww >= 0.0001)  ++less3;
+				if (ww < 0.0001)                 ++less4;
+			}
+		if (_quadLayers) {
+			MLMatrix<float> W2 = Weights2[k];
+			for (size_t i = 0; i < _neurons[k+1]; ++i) 
+				for (size_t j = 0; j < _neurons[k]; ++j) {
+					float ww = abs(W2(i,j));
+					if (ww >= 1.0)                   ++great0;
+					if (ww < 1.0   && ww >= 0.1)     ++less0;
+					if (ww < 0.1   && ww >= 0.01)    ++less1;
+					if (ww < 0.01  && ww >= 0.001)   ++less2;
+					if (ww < 0.001 && ww >= 0.0001)  ++less3;
+					if (ww < 0.0001)                 ++less4;
+				}
 		}
 		// Biases
 		MLMatrix<float> B = Biases[k];
-		for (int i = 0; i < _neurons[k+1]; ++i) {
+		for (size_t i = 0; i < _neurons[k+1]; ++i) {
 			float ww = abs(B(i,0));
 			if (ww >= 1.0)                   ++great0;
 			if (ww < 1.0   && ww >= 0.1)     ++less0;
@@ -512,10 +566,10 @@ void MLP::statWeights()
 	}
 	int nSynapses = numberOfWeights();
 	Serial.printf("Ratio of synapses greater than 1:   %5.2f %%\n", 100.0f * great0 / nSynapses);
-	Serial.printf("Ratio of synapses less than 1:      %5.2f %%\n", 100.0f * less0 / nSynapses);
-	Serial.printf("Ratio of synapses less than 0.1:    %5.2f %%\n", 100.0f * less1 / nSynapses);
-	Serial.printf("Ratio of synapses less than 0.01:   %5.2f %%\n", 100.0f * less2 / nSynapses);
-	Serial.printf("Ratio of synapses less than 0.001:  %5.2f %%\n", 100.0f * less3 / nSynapses);
+	Serial.printf("Ratio of synapses less than 1:      %5.2f %%\n", 100.0f * less0  / nSynapses);
+	Serial.printf("Ratio of synapses less than 0.1:    %5.2f %%\n", 100.0f * less1  / nSynapses);
+	Serial.printf("Ratio of synapses less than 0.01:   %5.2f %%\n", 100.0f * less2  / nSynapses);
+	Serial.printf("Ratio of synapses less than 0.001:  %5.2f %%\n", 100.0f * less3  / nSynapses);
 	Serial.printf("Ratio of synapses less than 0.0001: %5.2f %% (sparsity)\n", 100.0f * less4 / nSynapses);
 }
 
@@ -527,19 +581,33 @@ void MLP::saveWeights()
 	_eta_save = _eta;
 	_momentum_save = _momentum;
 	_gain_save = _gain;
+	Weights_save.clear();
+	Biases_save.clear();
 	Weights_save = Weights;
 	Biases_save = Biases;
+	if (_quadLayers) {
+		Weights2_save.clear();
+		Weights2_save = Weights2;
+	}
 }
 
 // Store the weights and parameters for later use
 void MLP::restoreWeights()
 {
 	if (_verbose > 1) Serial.println("Restoring weights");
-	_eta = _eta_save;
-	_momentum = _momentum_save;
-	_gain = _gain_save;
+	// _eta = _eta_save;
+	// _momentum = _momentum_save;
+	// _gain = _gain_save;
+	Weights.clear();
+	Biases.clear();
 	Weights = Weights_save;
 	Biases = Biases_save;
+	if (_quadLayers) {
+		Weights2.clear();
+		Weights2 = Weights2_save;
+	}
+	for (unsigned i = 1; i < _nLayers; ++i) _neurons[i] = Weights[i - 1].get_rows();
+	Serial.println("Apres restore"); size();
 }
 
 // Loads a network from LITTLEFS file system
@@ -555,7 +623,7 @@ bool MLP::netLoad(const char* const path)
 	if (_verbose > 0) Serial.printf("Loading network from file %s\n", path);
 	_nLayers = readIntFile (file);
 	if (_verbose > 1) Serial.printf ("%d layers\n", _nLayers);
-	for (int k = 0; k < _nLayers; ++k) {
+	for (size_t k = 0; k < _nLayers; ++k) {
 		_neurons[k] = readIntFile (file);
 		if (k > 0) _activations[k-1] = readIntFile (file);
 		if (_verbose > 1) {
@@ -576,22 +644,37 @@ bool MLP::netLoad(const char* const path)
 	// Load layers
 	int nW = 0;
 	Weights.clear();
+	if (_quadLayers) Weights2.clear();
 	Biases.clear();
-	for (int k = 0; k < _nLayers - 1; ++k) {
+	for (size_t k = 0; k < _nLayers - 1; ++k) {
+
+		if (_quadLayers) {
+			MLMatrix<float> W2(_neurons[k + 1], _neurons[k], 0);
+			for (size_t i = 0; i < _neurons[k+1]; ++i) {
+				for (size_t j = 0; j < _neurons[k]; ++j) {
+					W2(i,j) = readFloatFile (file);
+					if (_verbose > 2) 
+						Serial.printf("Layer %d: loading weight (%d, %d) = %.6f\n", k, i, j, W2(i,j));
+					++nW;
+				}
+			}
+			Weights2.push_back(W2);
+		}
+
 		MLMatrix<float> W(_neurons[k + 1], _neurons[k], 0);
 		MLMatrix<float> B(_neurons[k + 1], 1, 0);
-		for (int i = 0; i < _neurons[k+1]; ++i) {
-			for (int j = 0; j < _neurons[k]; ++j) {
+		for (size_t i = 0; i < _neurons[k+1]; ++i) {
+			for (size_t j = 0; j < _neurons[k]; ++j) {
 				W(i,j) = readFloatFile (file);
-				if (_verbose > 1) 
+				if (_verbose > 2) 
 					Serial.printf("Layer %d: loading weight (%d, %d) = %.6f\n", k, i, j, W(i,j));
 				++nW;
 			}
 		}
-		for (int i = 0; i < _neurons[k+1]; ++i) {
+		for (size_t i = 0; i < _neurons[k+1]; ++i) {
 			B(i,0) = readFloatFile (file);
-			if (_verbose > 1) 
-				Serial.printf("Layer %d: saving bias (%d) = %.6f\n", k, i, B(i,0));
+			if (_verbose > 2) 
+				Serial.printf("Layer %d: loading bias (%d) = %.6f\n", k, i, B(i,0));
 			++nW;
 		}
 		Weights.push_back(W);
@@ -616,7 +699,7 @@ void MLP::netSave(const char* const path)
 	if (_verbose > 0) Serial.printf("Saving network in file %s\n", path);
 	file.printf("%d\n", _nLayers);
 	if (_verbose > 1) Serial.printf ("%d layers\n", _nLayers);
-	for (int k = 0; k < _nLayers; ++k) {
+	for (size_t k = 0; k < _nLayers; ++k) {
 		file.printf("%d\n", _neurons[k]);
 		if (k > 0) file.printf("%d\n", _activations[k-1]);
 		if (_verbose > 1) {
@@ -634,22 +717,35 @@ void MLP::netSave(const char* const path)
 
 	// Save layers
 	int nW = 0;
-	for (int k = 0; k < _nLayers - 1; ++k) {
+	for (size_t k = 0; k < _nLayers - 1; ++k) {
 		// Weights
+
+		if (_quadLayers) {
+			MLMatrix<float> W2 = Weights2[k];
+			for (size_t i = 0; i < _neurons[k+1]; ++i) {
+				for (size_t j = 0; j < _neurons[k]; ++j) {
+					file.printf("%.6f\n", W2(i,j));
+					if (_verbose > 2) 
+						Serial.printf("Layer %d: saving weight (%d, %d) = %.6f\n", k, i, j, W2(i,j));
+					++nW;
+				}
+			}
+		}
+
 		MLMatrix<float> W = Weights[k];
-		for (int i = 0; i < _neurons[k+1]; ++i) {
-			for (int j = 0; j < _neurons[k]; ++j) {
+		for (size_t i = 0; i < _neurons[k+1]; ++i) {
+			for (size_t j = 0; j < _neurons[k]; ++j) {
 				file.printf("%.6f\n", W(i,j));
-				if (_verbose > 1) 
+				if (_verbose > 2) 
 					Serial.printf("Layer %d: saving weight (%d, %d) = %.6f\n", k, i, j, W(i,j));
 				++nW;
 			}
 		}
 		// Biases
 		MLMatrix<float> B = Biases[k];
-		for (int i = 0; i < _neurons[k+1]; ++i) {
+		for (size_t i = 0; i < _neurons[k+1]; ++i) {
 			file.printf("%.6f\n", B(i,0));
-			if (_verbose > 1) 
+			if (_verbose > 2) 
 				Serial.printf("Layer %d: saving bias (%d) = %.6f\n", k, i, B(i,0));
 			++nW;
 		}
@@ -701,13 +797,14 @@ uint32_t MLP::estimateDuration (int maxEpochs)
 	backward (yhat, y, 0);
 	// Update weights
 	dWeightsOld = dWeights;
+	if (_quadLayers) dWeightsOld2 = dWeights2;
 	dBiasesOld = Biases;
 	update (_batchSize);
 
   chrono = millis() - chrono;
   restoreWeights();
 
-	uint32_t dur = (chrono * maxEpochs * _nData) * 0.7f;
+	uint32_t dur = (chrono * maxEpochs * _nData) / 2;
   return dur;
 }
 
@@ -715,15 +812,21 @@ uint32_t MLP::estimateDuration (int maxEpochs)
 float MLP::regulL1Weights()
 {
 	float sum = 0.0f;
-	for (int k = 0; k < _nLayers - 1; ++k) {
+	for (size_t k = 0; k < _nLayers - 1; ++k) {
 		// Weights
 		MLMatrix<float> W = Weights[k];
-		for (int i = 0; i < _neurons[k+1]; ++i) 
-			for (int j = 0; j < _neurons[k]; ++j) 
+		for (size_t i = 0; i < _neurons[k+1]; ++i) 
+			for (size_t j = 0; j < _neurons[k]; ++j) 
 				sum += abs(W(i,j));
+		if (_quadLayers) {
+			MLMatrix<float> W2 = Weights2[k];
+			for (size_t i = 0; i < _neurons[k+1]; ++i) 
+				for (size_t j = 0; j < _neurons[k]; ++j) 
+					sum += abs(W2(i,j));
+		}
 		// Biases
 		MLMatrix<float> B = Biases[k];
-		for (int i = 0; i < _neurons[k+1]; ++i) 
+		for (size_t i = 0; i < _neurons[k+1]; ++i) 
 			sum += abs(B(i,0));
 	}
 	return sum;
@@ -733,15 +836,21 @@ float MLP::regulL1Weights()
 float MLP::regulL2Weights()
 {
 	float sum = 0.0f;
-	for (int k = 0; k < _nLayers - 1; ++k) {
+	for (size_t k = 0; k < _nLayers - 1; ++k) {
 		// Weights
 		MLMatrix<float> W = Weights[k];
-		for (int i = 0; i < _neurons[k+1]; ++i) 
-			for (int j = 0; j < _neurons[k]; ++j) 
+		for (size_t i = 0; i < _neurons[k+1]; ++i) 
+			for (size_t j = 0; j < _neurons[k]; ++j) 
 				sum += W(i,j) * W(i,j);
+		if (_quadLayers) {
+			MLMatrix<float> W2 = Weights2[k];
+			for (size_t i = 0; i < _neurons[k+1]; ++i) 
+				for (size_t j = 0; j < _neurons[k]; ++j) 
+					sum += W2(i,j) * W2(i,j);
+		}
 		// Biases
 		MLMatrix<float> B = Biases[k];
-		for (int i = 0; i < _neurons[k+1]; ++i) 
+		for (size_t i = 0; i < _neurons[k+1]; ++i) 
 			sum += B(i,0) * B(i,0);
 	}
 	return sum / 2.0f;
@@ -751,8 +860,9 @@ float MLP::regulL2Weights()
 int MLP::numberOfWeights()
 {
 	int nbSynapses = 0;
-	for (int i = 1; i < _nLayers; ++i) {
+	for (size_t i = 1; i < _nLayers; ++i) {
 		int nWeights = _neurons[i] * _neurons[i-1]; // weights
+		if (_quadLayers) nWeights *= 2;
 		int nBiases= _neurons[i]; // biases
 		nbSynapses += (nWeights + nBiases);
 	}
@@ -763,15 +873,21 @@ int MLP::numberOfWeights()
 float MLP::meanWeights()
 {
 	float sum = 0.0f;
-	for (int k = 0; k < _nLayers - 1; ++k) {
+	for (size_t k = 0; k < _nLayers - 1; ++k) {
 		// Weights
 		MLMatrix<float> W = Weights[k];
-		for (int i = 0; i < _neurons[k+1]; ++i) 
-			for (int j = 0; j < _neurons[k]; ++j) 
+		for (size_t i = 0; i < _neurons[k+1]; ++i) 
+			for (size_t j = 0; j < _neurons[k]; ++j) 
 				sum += W(i,j);
+		if (_quadLayers) {
+			MLMatrix<float> W2 = Weights2[k];
+			for (size_t i = 0; i < _neurons[k+1]; ++i) 
+				for (size_t j = 0; j < _neurons[k]; ++j) 
+					sum += W2(i,j);
+		}
 		// Biases
 		MLMatrix<float> B = Biases[k];
-		for (int i = 0; i < _neurons[k+1]; ++i) 
+		for (size_t i = 0; i < _neurons[k+1]; ++i) 
 			sum += B(i,0);
 	}
 	return sum / numberOfWeights();
@@ -781,15 +897,21 @@ float MLP::meanWeights()
 float MLP::stdevWeights (const float mean)
 {
   float stdev = 0.0f;
-	for (int k = 0; k < _nLayers - 1; ++k) {
+	for (size_t k = 0; k < _nLayers - 1; ++k) {
 		// Weights
 		MLMatrix<float> W = Weights[k];
-		for (int i = 0; i < _neurons[k+1]; ++i) 
-			for (int j = 0; j < _neurons[k]; ++j) 
+		for (size_t i = 0; i < _neurons[k+1]; ++i) 
+			for (size_t j = 0; j < _neurons[k]; ++j) 
 				stdev += pow(W(i,j) - mean, 2);
+		if (_quadLayers) {
+			MLMatrix<float> W2 = Weights2[k];
+			for (size_t i = 0; i < _neurons[k+1]; ++i) 
+				for (size_t j = 0; j < _neurons[k]; ++j) 
+					stdev += pow(W2(i,j) - mean, 2);
+		}
 		// Biases
 		MLMatrix<float> B = Biases[k];
-		for (int i = 0; i < _neurons[k+1]; ++i) 
+		for (size_t i = 0; i < _neurons[k+1]; ++i) 
 			stdev += pow(B(i,0) - mean, 2);
 	}
   stdev /= numberOfWeights();
@@ -800,10 +922,14 @@ float MLP::stdevWeights (const float mean)
 void MLP::displayWeights()
 {
 	Serial.println("Displaying weights");
-	for (int k = 0; k < _nLayers - 1; ++k) {
+	for (size_t k = 0; k < _nLayers - 1; ++k) {
 		Serial.printf("Layer %d:\n", k);
 		Serial.println("Weights:");
 	// Weights
+		if (_quadLayers) {
+			MLMatrix<float> W2 = Weights2[k];
+			W2.print();
+		}
 		MLMatrix<float> W = Weights[k];
 		W.print();
 		// Biases
@@ -836,27 +962,28 @@ void MLP::displayWeights()
 *************************************/
 // Process the dataset (number of data, min and max values)
 // First case: dataset already a vector of vectors
-void MLP::createDataset (const MLMatrix<float> x0, MLMatrix<float> &y0, const int nData)
+void MLP::createDataset (MLMatrix<float> x0, MLMatrix<float> &y0, const int nData)
 {
+	if (_verbose > 1) Serial.println("Creating dataset...");
 	_nData = nData;
 	_xmin.clear();
 	_ymin.clear();
 	_xmax.clear();
 	_ymax.clear();
 
-	for (int j = 0; j < _nInputs; ++j) {
+	for (size_t j = 0; j < _nInputs; ++j) {
 		_xmin.push_back(MAX_float);
 		_xmax.push_back(MIN_float);
-		for (int i = 0; i < _nData; ++i) {
+		for (size_t i = 0; i < _nData; ++i) {
 			float xx = x0(i,j);
 			if (xx < _xmin[j]) _xmin[j] = xx;
 			if (xx > _xmax[j]) _xmax[j] = xx;
 		}
 	}
-	for (int j = 0; j < _nClasses; ++j) {
+	for (size_t j = 0; j < _nClasses; ++j) {
 		_ymin.push_back(MAX_float);
 		_ymax.push_back(MIN_float);
-		for (int i = 0; i < _nData; ++i) {
+		for (size_t i = 0; i < _nData; ++i) {
 			if (_enSoftmax && _labelSmoothing) {
 				// Label smoothing is a way of adding noise at the output targets, aka labels.
 				float epsilon = 0.001f;
@@ -873,13 +1000,13 @@ void MLP::createDataset (const MLMatrix<float> x0, MLMatrix<float> &y0, const in
 	if (_verbose > 1) {
 		Serial.printf("\tDataset contains %d data\n", _nData);
 		Serial.print("\tMin value of x: ");
-		for (int j = 0; j < _nInputs; ++j)  Serial.printf("%9.3f ", _xmin[j]); Serial.println();
+		for (size_t j = 0; j < _nInputs; ++j)  Serial.printf("%9.3f ", _xmin[j]); Serial.println();
 		Serial.print("\tMax value of x: ");
-		for (int j = 0; j < _nInputs; ++j)  Serial.printf("%9.3f ", _xmax[j]); Serial.println();
+		for (size_t j = 0; j < _nInputs; ++j)  Serial.printf("%9.3f ", _xmax[j]); Serial.println();
 		Serial.printf("\tMin value of y: ");
-		for (int j = 0; j < _nClasses; ++j) Serial.printf("%9.3f ", _ymin[j]); Serial.println();
+		for (size_t j = 0; j < _nClasses; ++j) Serial.printf("%9.3f ", _ymin[j]); Serial.println();
 		Serial.printf("\tMax value of y: ");
-		for (int j = 0; j < _nClasses; ++j) Serial.printf("%9.3f ", _ymax[j]); Serial.println();
+		for (size_t j = 0; j < _nClasses; ++j) Serial.printf("%9.3f ", _ymax[j]); Serial.println();
 	}
 }
 
@@ -899,7 +1026,7 @@ void MLP::createDatasetFromArray (MLMatrix<float> &x0, MLMatrix<float> &y0, cons
 	_ymax.push_back(MIN_float);
 
 	std::vector<float> a, b;
-	for (int i = 0; i < _nData; ++i) {
+	for (size_t i = 0; i < _nData; ++i) {
 		if (x[i] < _xmin[0]) _xmin[0] = x[i];
 		if (x[i] > _xmax[0]) _xmax[0] = x[i];
 		if (y[i] < _ymin[0]) _ymin[0] = y[i];
@@ -934,7 +1061,7 @@ void MLP::createDatasetFromVector (MLMatrix<float> &x0, MLMatrix<float> &y0, con
 	_ymin.push_back(MAX_float);
 	_ymax.push_back(MIN_float);
 
-	for (int i = 0; i < _nData; ++i) {
+	for (size_t i = 0; i < _nData; ++i) {
 		if (x[i] < _xmin[0]) _xmin[0] = x[i];
 		if (x[i] > _xmax[0]) _xmax[0] = x[i];
 		if (y[i] < _ymin[0]) _ymin[0] = y[i];
@@ -954,7 +1081,7 @@ void MLP::createDatasetFromVector (MLMatrix<float> &x0, MLMatrix<float> &y0, con
 
 void MLP::shuffleDataset (MLMatrix<float> &x, MLMatrix<float> &y, uint16_t from, uint16_t to)
 {
-	if (_verbose > 0) Serial.println("Shuffling dataset...");
+	if (_verbose > 1) Serial.println("Shuffling dataset...");
 	if (from >= to || from > _nData || to > _nData) {
 		Serial.printf ("Error: cannot shuffle from %d to %d", from, to);
 		while (1);
@@ -962,18 +1089,18 @@ void MLP::shuffleDataset (MLMatrix<float> &x, MLMatrix<float> &y, uint16_t from,
 	// if (to >= _nData) to = _nData;
 	// if (from >= _nData) from = to - 1;
 
-	for (unsigned i = 0; i < 5 * _nData; ++i) {
+	for (size_t i = 0; i < 5 * _nData; ++i) {
 		int k = random(from, to);
 		int m = random(from, to);
 		MLMatrix<float> Xk(1, _nInputs, 0);
 		MLMatrix<float> Yk(1, _nClasses, 0);
 		Xk = x.row(k);
 		Yk = y.row(k);
-		for (unsigned j = 0; j < _nInputs; ++j)  {
+		for (size_t j = 0; j < _nInputs; ++j)  {
 			x(k,j) = x(m,j);
 			x(m,j) = Xk(0,j);
 		}
-		for (unsigned j = 0; j < _nClasses; ++j) {
+		for (size_t j = 0; j < _nClasses; ++j) {
 			y(k,j) = y(m,j);
 			y(m,j) = Yk(0,j);
 		}
@@ -997,13 +1124,13 @@ void MLP::normalizeDataset (MLMatrix<float> &x, MLMatrix<float> &y, const uint8_
 	switch (_norm) {
 		case 0: break;
 		case 1: {
-			for (unsigned i=0; i<_nData; ++i) {
-				for (unsigned j=0; j<_nInputs; ++j) {
+			for (size_t i = 0; i < _nData; ++i) {
+				for (size_t j = 0; j < _nInputs; ++j) {
 					x(i,j) = (x(i,j) - _xmin[j]) / (_xmax[j] - _xmin[j]);
 					// if (i==0) Serial.printf("input %d : min %f max %f\n",j,_xmin[j], _xmax[j]);
 				}
 				if (_activations[_nLayers - 2] != SOFTMAX) {
-					for (unsigned j=0; j<_nClasses; ++j) {
+					for (size_t j = 0; j < _nClasses; ++j) {
 						y(i,j) = (y(i,j) - _ymin[j]) / (_ymax[j] - _ymin[j]);
 					// if (i==0) Serial.printf("class %d : min %f max %f\n",j,_ymin[j], _ymax[j]);
 					}
@@ -1012,14 +1139,13 @@ void MLP::normalizeDataset (MLMatrix<float> &x, MLMatrix<float> &y, const uint8_
 			break;	
 		}
 		case 2: {
-			for (unsigned i=0; i<_nData; ++i) {
-				for (unsigned j=0; j<_nInputs; ++j)
+			for (size_t i = 0; i < _nData; ++i) {
+				for (size_t j = 0; j < _nInputs; ++j)
 					x(i,j) = ((x(i,j) - _xmin[j]) / (_xmax[j] - _xmin[j]) - 0.5f) * 2.0f;
 				if (_activations[_nLayers - 2] != SOFTMAX) {
-					for (unsigned j=0; j<_nClasses; ++j)
+					for (size_t j = 0; j < _nClasses; ++j)
 						y(i,j) = ((y(i,j) - _ymin[j]) / (_ymax[j] - _ymin[j]) - 0.5f) * 2.0f;
 				}
-				// Serial.printf("%d x %f y %f\n",i,x[i][0], y[i][0]);
 			}
 			break;		
 		}
@@ -1029,21 +1155,21 @@ void MLP::normalizeDataset (MLMatrix<float> &x, MLMatrix<float> &y, const uint8_
 			_yMean.clear();
 			_yStdev.clear();
 
-			for (unsigned j=0; j<_nInputs; ++j) {
+			for (size_t j = 0; j < _nInputs; ++j) {
 				MLMatrix<float> vx(_nData,1,0);
-				for (unsigned i=0; i<_nData; ++i) vx(i,0) = x(i,j);
+				for (size_t i = 0; i < _nData; ++i) vx(i,0) = x(i,j);
 				_xMean.push_back(vx.mean());
 				_xStdev.push_back(vx.stdev(_xMean[j]));
-				for (unsigned i=0; i<_nData; ++i)
+				for (size_t i = 0; i < _nData; ++i)
 					x(i,j) = (x(i,j) - _xMean[j]) / _xStdev[j];	
 			}
 			if (_activations[_nLayers - 2] != SOFTMAX) {
-				for (unsigned j=0; j<_nClasses; ++j) {
+				for (size_t j = 0; j < _nClasses; ++j) {
 					MLMatrix<float> vy(_nData,1,0);
-					for (unsigned i=0; i<_nData; ++i) vy(i,0) = y(i,j);
+					for (size_t i = 0; i < _nData; ++i) vy(i,0) = y(i,j);
 					_yMean.push_back(vy.mean());
 					_yStdev.push_back(vy.stdev(_yMean[j]));
-					for (unsigned i=0; i<_nData; ++i)
+					for (size_t i = 0; i < _nData; ++i)
 							y(i,j) = (y(i,j) - _yMean[j]) / _yStdev[j];	
 				}
 			}
@@ -1072,17 +1198,17 @@ void MLP::normalize(MLMatrix<float> &x, const uint8_t norm)
 		switch (norm) {
 			case 0: break;
 			case 1: {
-				for (unsigned i=0; i<rows; i++) 
+				for (size_t i = 0; i < rows; i++) 
 					x(i,0) = (x(i,0) - _xmin[i]) / (_xmax[i] - _xmin[i]);
 				break;	
 			}
 			case 2: {
-				for (unsigned i=0; i<rows; i++)
+				for (size_t i = 0; i < rows; i++)
 					x(i,0) = ((x(i,0) - _xmin[i]) / (_xmax[i] - _xmin[i]) - 0.5f) * 2.0f;
 				break;		
 			}
 			case 3: {
-				for (unsigned i=0; i<rows; i++) 
+				for (size_t i = 0; i < rows; i++) 
 					x(i,0) = (x(i,0) - _xMean[i]) / _xStdev[i];
 				break;
 			}
@@ -1096,17 +1222,17 @@ void MLP::normalize(MLMatrix<float> &x, const uint8_t norm)
 		switch (norm) {
 			case 0: break;
 			case 1: {
-				for (unsigned i=0; i<cols; ++i) 
+				for (size_t i = 0; i < cols; ++i) 
 					x(0,i) = (x(0,i) - _xmin[i]) / (_xmax[i] - _xmin[i]);
 				break;	
 			}
 			case 2: {
-				for (unsigned i=0; i<cols; i++)
+				for (size_t i = 0; i < cols; i++)
 					x(0,i) = ((x(0,i) - _xmin[i]) / (_xmax[i] - _xmin[i]) - 0.5f) * 2.0f;
 				break;		
 			}
 			case 3: {
-				for (unsigned i=0; i<cols; ++i) 
+				for (size_t i = 0; i < cols; ++i) 
 					x(0,i) = (x(0,i) - _xMean[i]) / _xStdev[i];
 				break;
 			}
@@ -1126,20 +1252,20 @@ void MLP::normalize(MLMatrix<float> &x, const uint8_t norm)
 // 	switch (norm) {
 // 		case 0: break;
 // 		case 1: {
-// 			for (unsigned i=0; i<rows; ++i)
-// 				for (unsigned j=0; j<cols; ++j)
+// 			for (size_t i = 0; i < rows; ++i)
+// 				for (size_t j = 0; j < cols; ++j)
 // 					y(i,j) = (y(i,j) * (_ymax[j] - _ymin[j])) + _ymin[j];
 // 			break;
 // 		}
 // 		case 2: {
-// 			for (unsigned i=0; i<rows; i++)
-// 				for (unsigned j=0; j<cols; ++j)
+// 			for (size_t i = 0; i < rows; i++)
+// 				for (size_t j = 0; j < cols; ++j)
 // 					y(i,j) = ((y(i,j) / 2.0f) + 0.5f) * (_ymax[j] - _ymin[j]) + _ymin[j];
 // 			break;		
 // 		}
 // 		case 3: {
-// 			for (unsigned i=0; i<rows; i++) 
-// 				for (unsigned j=0; j<cols; ++j)
+// 			for (size_t i = 0; i < rows; i++) 
+// 				for (size_t j = 0; j < cols; ++j)
 // 					y(i,j)= (y(i,j) * _yStdev[j]) + _yMean[j];
 // 			break;
 // 		}
@@ -1158,18 +1284,18 @@ void MLP::deNorm(MLMatrix<float> &y, const uint8_t norm)
 		switch (norm) {
 			case 0: break;
 			case 1: {
-				for (unsigned i=0; i<rows; i++) 
+				for (size_t i = 0; i < rows; i++) 
 					y(i,0) = (y(i,0) * (_ymax[i] - _ymin[i])) + _ymin[i];
 				break;	
 			}
 			case 2: {
-				for (unsigned i=0; i<rows; i++) {
+				for (size_t i = 0; i < rows; i++) {
 					y(i,0) = ((y(i,0) / 2.0f) + 0.5f) * (_ymax[i] - _ymin[i]) + _ymin[i];
 				}
 				break;		
 			}
 			case 3: {
-				for (unsigned i=0; i<rows; i++) 
+				for (size_t i = 0; i < rows; i++) 
 					y(i,0) = (y(i,0) * _yStdev[i]) + _yMean[i];
 				break;
 			}
@@ -1183,17 +1309,17 @@ void MLP::deNorm(MLMatrix<float> &y, const uint8_t norm)
 		switch (norm) {
 			case 0: break;
 			case 1: {
-				for (unsigned i=0; i<cols; ++i) 
+				for (size_t i = 0; i < cols; ++i) 
 					y(0,i) = (y(0,i) * (_ymax[i] - _ymin[i])) + _ymin[i];
 				break;	
 			}
 			case 2: {
-				for (unsigned i=0; i<cols; i++)
+				for (size_t i = 0; i < cols; i++)
 					y(0,i) = ((y(0,i) / 2.0f) + 0.5f) * (_ymax[i] - _ymin[i]) + _ymin[i];
 				break;		
 			}
 			case 3: {
-				for (unsigned i=0; i<cols; ++i) 
+				for (size_t i = 0; i < cols; ++i) 
 					y(0,i) = (y(0,i) * _yStdev[i]) + _yMean[i];
 				break;
 			}
@@ -1213,6 +1339,7 @@ void MLP::deNorm(MLMatrix<float> &y, const uint8_t norm)
 */
 int MLP::readCsvFromSpiffs (const char* const path, MLMatrix<float>& x0, MLMatrix<float>& y0)
 {
+	if (_verbose > 1) Serial.printf ("Opening file %s\n", path);
 	File file = LITTLEFS.open(path);
 	if (!file || file.isDirectory()) {
 		Serial.printf("%s - failed to open file for reading\n", path);
@@ -1252,6 +1379,7 @@ int MLP::readCsvFromSpiffs (const char* const path, MLMatrix<float>& x0, MLMatri
 			nCols, _neurons[0], _neurons[0] + 1);
 		while (1);
 	}
+	if (_verbose > 1) Serial.printf ("Read first line: found %d columns\n", nCols);
 	std::vector<std::vector<float> > Vx, Vy;
 	Vx.push_back(X);
 	Vy.push_back(Y);
@@ -1268,7 +1396,7 @@ int MLP::readCsvFromSpiffs (const char* const path, MLMatrix<float>& x0, MLMatri
 		Y.clear();
 		buffer[i] = NULL;
 		pch = strtok (buffer, ",;");
-		for (int i = 0; i < nCols; i++) {
+		for (size_t i = 0; i < nCols; i++) {
 			float data = atof(pch);
 			if (i < nCols - 1) X.push_back(data);
 			else Y.push_back(data);
@@ -1279,10 +1407,13 @@ int MLP::readCsvFromSpiffs (const char* const path, MLMatrix<float>& x0, MLMatri
 		++nData;
 	}
 
+	if (_verbose > 1) Serial.printf ("Read file complete: found %d lines\n", nData);
 	x0.setSize(nData, _nInputs);
 	y0.setSize(nData, _nClasses);
 	x0 = Vx;
-	y0 = Vy;
+	if (_enSoftmax) 
+		for (size_t i = 0; i < Vy.size(); ++i) y0(i,int(Vy[i][0])) = 1; // One hot encoder
+	else y0 = Vy;
 
 	createDataset (x0, y0, nData);
 	if (_verbose > 0) Serial.printf("Read %d data of %d input\n", nData, _neurons[0]);
@@ -1299,16 +1430,28 @@ MLMatrix<float> MLP::forward (MLMatrix<float> x, bool onlyInference)
 	if (_verbose > 2) Serial.println("Forward...");
 	// 1: Clear workspace
 	_a.clear();
+	_dropoutMasks.clear();
 	MLMatrix<float> yhat;
-	// 2: Forward pass
 	if (!onlyInference) _a.push_back(x); // saved for backward pass
 
-	for (int k = 0; k < _nLayers - 1; ++k) {
+	// 2: Forward pass
+	for (size_t k = 0; k < _nLayers - 1; ++k) {
+		if (_dropout) { // Apply dropout
+			MLMatrix<uint8_t> Mask = x.dropout(_dropout_prob);
+			_dropoutMasks.push_back(Mask);
+			x /= _dropout_prob;
+		}
+
 		yhat = Weights[k] * x + Biases[k];
+		if (_quadLayers) {
+			MLMatrix<float> x2 = x.square();
+			yhat = yhat + Weights2[k] * x2;
+		} //else // No activation for quadratic layers
 		yhat = activation(yhat, _activations[k]);
 		if (!onlyInference) _a.push_back(yhat); // saved for backward pass
 		x = yhat;
 	}
+	if (_verbose > 2) yhat.print();
 	return yhat;
 }
 
@@ -1318,22 +1461,37 @@ MLMatrix<float> MLP::activation(MLMatrix<float> x, const uint8_t activNumber)
 	MLMatrix<float> result(rows, 1, 0.0f);
 	switch (activNumber) {
 		case RELU:
-			for (uint8_t i = 0; i< rows; ++i) result(i,0) = ReLu(x(i,0));
+			for (size_t i = 0; i< rows; ++i) result(i,0) = ReLu(x(i,0));
 			break;
 		case SIGMOID:
-			for (uint8_t i = 0; i< rows; ++i) result(i,0) = Sigmoid(x(i,0));
+			for (size_t i = 0; i< rows; ++i) result(i,0) = Sigmoid(x(i,0));
 			break;
 		case SIGMOID2:
-			for (uint8_t i = 0; i< rows; ++i) result(i,0) = Sigmoid2(x(i,0));
+			for (size_t i = 0; i< rows; ++i) result(i,0) = Sigmoid2(x(i,0));
 			break;
 		case TANH:
-			for (uint8_t i = 0; i< rows; ++i) result(i,0) = Tanh(x(i,0));
+			for (size_t i = 0; i< rows; ++i) result(i,0) = Tanh(x(i,0));
 			break;
 		case ID:
-			for (uint8_t i = 0; i< rows; ++i) result(i,0) = Id(x(i,0));
+			for (size_t i = 0; i< rows; ++i) result(i,0) = Id(x(i,0));
 			break;
 		case SOFTMAX:
 			result = SoftMax(x);
+			break;
+		case LEAKYRELU:
+			for (size_t i = 0; i< rows; ++i) result(i,0) = LeakyReLu(x(i,0));
+			break;
+		case ELU:
+			for (size_t i = 0; i< rows; ++i) result(i,0) = ELu(x(i,0));
+			break;
+		case SELU:
+			for (size_t i = 0; i< rows; ++i) result(i,0) = SeLu(x(i,0));
+			break;
+		case RELU6:
+			for (size_t i = 0; i< rows; ++i) result(i,0) = ReLu6(x(i,0));
+			break;
+		case SWISH:
+			for (size_t i = 0; i< rows; ++i) result(i,0) = Swish(x(i,0));
 			break;
 		default:
 			Serial.printf("Unknown activation (%d)\n", activNumber);
@@ -1347,22 +1505,37 @@ MLMatrix<float> MLP::dActivation(MLMatrix<float> x, const uint8_t activNumber)
 	MLMatrix<float> result(rows, 1, 1.0f);
 	switch (activNumber) {
 		case RELU:
-			for (uint8_t i = 0; i< rows; ++i) result(i,0) = dReLu(x(i,0));
+			for (size_t i = 0; i< rows; ++i) result(i,0) = dReLu(x(i,0));
 			break;
 		case SIGMOID:
-			for (uint8_t i = 0; i< rows; ++i) result(i,0) = dSigmoid(x(i,0));
+			for (size_t i = 0; i< rows; ++i) result(i,0) = dSigmoid(x(i,0));
 			break;
 		case SIGMOID2:
-			for (uint8_t i = 0; i< rows; ++i) result(i,0) = dSigmoid2(x(i,0));
+			for (size_t i = 0; i< rows; ++i) result(i,0) = dSigmoid2(x(i,0));
 			break;
 		case TANH:
-			for (uint8_t i = 0; i< rows; ++i) result(i,0) = dTanh(x(i,0));
+			for (size_t i = 0; i< rows; ++i) result(i,0) = dTanh(x(i,0));
 			break;
 		case ID:
-			for (uint8_t i = 0; i< rows; ++i) result(i,0) = dId(x(i,0));
+			for (size_t i = 0; i< rows; ++i) result(i,0) = dId(x(i,0));
 			break;
 		case SOFTMAX:
 		// Return vector full of 1
+			break;
+		case LEAKYRELU:
+			for (size_t i = 0; i< rows; ++i) result(i,0) = dLeakyReLu(x(i,0));
+			break;
+		case ELU:
+			for (size_t i = 0; i< rows; ++i) result(i,0) = dELu(x(i,0));
+			break;
+		case SELU:
+			for (size_t i = 0; i< rows; ++i) result(i,0) = dSeLu(x(i,0));
+			break;
+		case RELU6:
+			for (size_t i = 0; i< rows; ++i) result(i,0) = dReLu6(x(i,0));
+			break;
+		case SWISH:
+			for (size_t i = 0; i< rows; ++i) result(i,0) = dSwish(x(i,0));
 			break;
 		default:
 			Serial.printf("Unknown (d)activation (%d)\n", activNumber);
@@ -1380,7 +1553,7 @@ float MLP::error (MLMatrix<float> y, MLMatrix<float> yhat) const
 		y.indexMax(idy0, idy1);
 		err = abs(idh0 - idy0);
 	} else {
-		for (int c = 0; c < _nClasses; ++c) 
+		for (size_t c = 0; c < _nClasses; ++c) 
 			err += abs (y(c, 0) - yhat(c, 0));
 	}
 	return err;
@@ -1396,7 +1569,7 @@ void MLP::heuristics (int epoch, int maxEpochs, bool _better)
 	static bool Gup = false;
 	static uint8_t nbRestore = 0;
 
-	// Restore or change weights if too many epochs without improvement
+// Restore or change weights if too many epochs without improvement
 	if (epoch - _lastBestEpoch > maxEpochs / 10) {
 		if (_changeWeights) {
 			Serial.println("Setting new random weights");
@@ -1410,7 +1583,7 @@ void MLP::heuristics (int epoch, int maxEpochs, bool _better)
 				nbRestore = nbRestore % 3; // force weights changes after 3 weight restorations
 				float amplitude = 0.1f; // Change values up to 10%
 				Serial.printf("Random change to weights (amplitude %.1f%%)\n", amplitude * 100);
-				for (int k = 0; k < _nLayers - 1; ++k)
+				for (size_t k = 0; k < _nLayers - 1; ++k)
 					Weights[k].randomChange(amplitude);
 			}
 		}
@@ -1420,12 +1593,13 @@ void MLP::heuristics (int epoch, int maxEpochs, bool _better)
 			_bestEta = false;
 		}
 		// and set LR to original value
-		_eta = _eta0;
+		// Serial.println("Setting LR to initial value");
+		// _eta = _eta0;
 	}
 
-	// Apply learning rate variation (lin / log)
+// Apply learning rate variation (lin / log)
 	if (_changeLRlin) {
-		float _eta = _eta0 + epoch * (_etaMin - _eta0) / maxEpochs;
+		_eta = _eta0 + epoch * (_etaMin - _eta0) / maxEpochs;
 		if (_verbose > 1) Serial.printf ("Heuristics: LR = %f, mom = %f\n", _eta, _momentum);
 	}
 
@@ -1442,19 +1616,33 @@ void MLP::heuristics (int epoch, int maxEpochs, bool _better)
 		if (_verbose > 1) Serial.printf ("Heuristics: LR = %f, mom = %f\n", _eta, _momentum);
 	}
 
-	// Apply small random changes to weights (3% chance)
+// Apply small random changes to weights (3% chance)
 	if (rand01() < 0.03f && _mutateWeights) {
 		float amplitude = 0.025f;
 		if (_verbose > 0) Serial.printf("Random change to weights (amplitude %.1f%%)\n", amplitude * 100);
-		for (int k = 0; k < _nLayers - 1; ++k)
+		for (size_t k = 0; k < _nLayers - 1; ++k)
 			Weights[k].randomChange(amplitude);
 	}
 
-	// Apply other changes
+// Apply other changes
 	// (nDots is the number of epochs since last best epoch)
-	if (_currError / _stopError > 5 && _nDots > 5) {
+	if (_currError / _stopError > 3 && _nDots > 5) {
 		_nDots = 0;
 
+	// Add neurons
+	if (_prune_topk || _prune_neurons || _prune_train) {
+		uint8_t nbNeurons = random(1, 6);
+		for (unsigned i = 0; i < nbNeurons; ++i) {
+			int layer = random(1, _nLayers - 1);
+			Serial.printf("Heuristics: adding a neuron to layer %d\n", layer);
+			addNeuron(layer);
+		}
+		size();
+	 _maxEpochs += 5;
+	 Serial.printf("Adding 5 epochs : total epoch number now is %d\n", _maxEpochs);
+	}
+
+	// Momentum variation
 		if (rand01() < 0.25f && _changeMom && !_varMom) {
 			float alpha = _momentum;
 			if (alpha <= _minAlpha || alpha >= _maxAlpha) Aup = !Aup;
@@ -1463,12 +1651,13 @@ void MLP::heuristics (int epoch, int maxEpochs, bool _better)
 			if (_verbose > 0) Serial.printf ("Heuristics: changing momentum to %f\n", _momentum);
 		}
 	
+	// Sigmoid gain variation
 		if (rand01() < 0.25f && _changeGain) {
 			float gain = _gain;
 			if (gain <= _minGain || gain >= _maxGain) Gup = !Gup;
 			if (Gup) _gain = gain + 0.15;
 			else _gain = gain - 0.15;
-			if (_verbose > 0) Serial.printf ("Heuristics: changing Sigmoid gain to %.2f\n", _gain);
+			if (_verbose > 0) Serial.printf ("Heuristics: changing sigmoid gain to %.2f\n", _gain);
 		}
 	
 		// if (_bestEta) {
@@ -1476,77 +1665,163 @@ void MLP::heuristics (int epoch, int maxEpochs, bool _better)
 		// 	_bestEta = false;
 		// }
 
+// Display values
+		if (_verbose > 1) {
+			Serial.printf ("Heuristics: LR = %f, mom = %f sigmoid gain= %f\n", _eta, _momentum, _gain);
+		}
 	}
 }
 
+// Increase the score of the neurons in top K of each layer
+void MLP::topKCount (float threshold, int layer, MLMatrix<float>& b)
+{
+	int rows = b.get_rows();
+	int cols = b.get_cols();
+	// Serial.printf("topK count: layer %d dimension %d %d, threshold %f\n", layer, rows, cols, threshold);
+	for (size_t i = 0; i < rows; ++i) {
+		for (size_t j = 0; j < cols; ++j) {
+			if (b(i,j) > threshold) b_topK[layer][i] += 1;
+		}
+	}
+}
+
+// Back propagation
 void MLP::backward (const MLMatrix<float> yhat, const MLMatrix<float> y, const int d)
 {
 	if (_verbose > 2) Serial.println("Backward...");
 	MLMatrix<float> delta;
 	MLMatrix<float> Weights_old;
+	MLMatrix<float> Weights_old2, c2, delta2;
 
 // http://neuralnetworksanddeeplearning.com/chap2.html#the_backpropagation_algorithm
-	for (int k = _nLayers - 1; k > 0; --k) {
-		if (k == _nLayers - 1) delta = yhat - y; // last layer (MSE or Cross Entropy)
-		else delta = Weights_old.transpose() * delta;
+	for (size_t k = _nLayers - 1; k > 0; --k) {
+		if (k == _nLayers - 1) {
+			delta = yhat - y; // last layer (MSE or Cross Entropy)
+			if (_quadLayers) delta2 = delta;
+		} else {
+			delta = Weights_old.transpose() * delta;
+			if (_quadLayers) delta2 = Weights_old2.transpose() * delta2;
+		}
+		if (_verbose > 2) delta.print();
+
+		if (_dropout && k != _nLayers - 1) { // Consider dropout
+			MLMatrix<uint8_t> Mask = _dropoutMasks.back();
+			_dropoutMasks.pop_back();
+			if ( delta.get_rows() != Mask.get_rows() || delta.get_cols() != Mask.get_cols() ) { // matrices of different sizes
+		    Serial.printf("Hadamard product error: dimensions do not match (%d, %d).(%d, %d)", delta.get_rows(),delta.get_cols(),Mask.get_rows(),Mask.get_cols());
+		    while(1);
+		  }
+		  MLMatrix<float> result(delta);
+		  for ( unsigned i = 0; i < delta.get_rows(); ++i )
+      	for ( unsigned j = 0; j < delta.get_cols(); ++j )
+        	result(i,j) = delta(i,j) * Mask(i,j);
+			delta = result / _dropout_prob;
+		}
 
 		MLMatrix<float> b = dActivation(_a[k], _activations[k - 1]);
 		delta = delta.Hadamard(b);
 
-		if (d == 0) dBiases.push_back(delta);
-		else dBiases[_nLayers - 1 - k] += delta;
-
 		Weights_old = Weights[k - 1];
 		MLMatrix<float> c = delta * _a[k - 1].transpose();
-		if (d == 0) dWeights.push_back(c);
-		else dWeights[_nLayers - 1 - k] += c;
+		if (_verbose > 2) delta.print();
+		if (_verbose > 2) c.print();
+
+		if (_quadLayers) {
+			delta2 = delta2.Hadamard(b);
+			Weights_old2 = Weights2[k - 1];
+			c2 = delta2 * _a[k - 1].transpose();
+		}
+
+		// Manage topK pruning
+		if (_prune_topk) {
+			// inspired from https://arxiv.org/ftp/arxiv/papers/1711/1711.06528.pdf
+			std::vector<float> V = c.sortValues();
+			int nbW = int(V.size() * _topKpcent);
+			float threshold = V[nbW];
+			// Clip to zero gradient values under threshold
+			int nbClipW = c.clipToZero(threshold);
+			int nbClipB = delta.clipToZero(threshold);
+			// Serial.printf("Gradient clipping:  nbW %d thresh %f clipped weights %d, biases %d\n",nbW, threshold, nbClipW, nbClipB);
+			std::vector<float> Vb = b.sortValues();
+			int nbWb = int(Vb.size() * 0.75);
+			threshold = Vb[nbWb];
+			if (k != _nLayers - 1 && k != 0) topKCount(threshold, k, b);
+		}
+
+		// Compute gradients
+		if (d == 0) {
+			dWeights.push_back(c);
+			if (_quadLayers) dWeights2.push_back(c2);
+			dBiases.push_back(delta);
+		}	else {
+			dWeights[_nLayers - 1 - k] += c;
+			if (_quadLayers) dWeights2[_nLayers - 1 - k] += c2;
+			dBiases[_nLayers - 1 - k] += delta;
+		}
+		if (_verbose > 2) dBiases[_nLayers - 1 - k].print();
   }
 }
 
+// Update weights & biases
 void MLP::update (const int batchSize)
 {
-	for (int k = _nLayers - 1; k > 0; --k) {
+	float eta = _eta;
+	for (size_t k = _nLayers - 1; k > 0; --k) {
+		// Testing layer specific learning rates (aka differential LR): not convincing
+		// eta = _eta * (1.0f + (_nLayers - k - 1.0f) / (_nLayers - 2.0f)); // LR decreasing with deeper layers
+		// eta = _eta * (1.0f + (k - 1.0f) / (_nLayers - 2.0f)); // LR increasing with deeper layers (better)
 		MLMatrix<float> W = Weights[k - 1];
-		MLMatrix<float> B = Biases[k - 1];
+		// MLMatrix<float> B = Biases[k - 1];
 
 // Gradient clipping
 		if (_gradClip && !_firstRun) {
 			dBiases[_nLayers - 1 - k].clipMax(_gradClipValue);
 			dWeights[_nLayers - 1 - k].clipMax(_gradClipValue);
+			if (_quadLayers) dWeights2[_nLayers - 1 - k].clipMax(_gradClipValue);
 		}
 
 // Rescale gradient
 		if (_gradScaling && !_firstRun) {
 			bool zeroNorm = dBiases[_nLayers - 1 - k].normScale2(_gradScale);
-			if (zeroNorm) Serial.printf("Warning: biases gradients are zero (layer %d)\n", k);
+			if (zeroNorm) {
+				Serial.printf("Warning: biases gradients are zero (layer %d)\n", k);
+				// dBiases[_nLayers - 1 - k].print();
+			}
 			zeroNorm = dWeights[_nLayers - 1 - k].normScale2(_gradScale);
-			if (zeroNorm)	Serial.printf("Warning: weights gradients are zero (layer %d)\n", k);
+			if (_quadLayers) zeroNorm += dWeights2[_nLayers - 1 - k].normScale2(_gradScale);
+			if (zeroNorm)	{
+				Serial.printf("Warning: weights gradients are zero (layer %d)\n", k);
+				// dWeights[_nLayers - 1 - k].print();
+			}
 		}
 
 // Update weights
-		Biases[k - 1]  -= dBiases[_nLayers - 1 - k]  * (_eta / batchSize);
-		Weights[k - 1] -= dWeights[_nLayers - 1 - k] * (_eta / batchSize);
+		Biases[k - 1]  -= dBiases[_nLayers - 1 - k]  * (eta / batchSize);
+		Weights[k - 1] -= dWeights[_nLayers - 1 - k] * (eta / batchSize);
+		if (_quadLayers) Weights2[k - 1] -= dWeights2[_nLayers - 1 - k] * (eta / batchSize);
 		if (!_firstRun) {
 			Biases[k - 1]  -= dBiasesOld[_nLayers - 1 - k]  * (_momentum / batchSize);
 			Weights[k - 1] -= dWeightsOld[_nLayers - 1 - k] * (_momentum / batchSize);
+			if (_quadLayers) Weights2[k - 1] -= dWeightsOld2[_nLayers - 1 - k] * (_momentum / batchSize);
 		}
 
 // Apply regularization penalty
 		if (_regulL1)  {
-			Biases[k - 1]  -= B.sgn() * _lambdaRegulL1 * (_eta / batchSize);
-			Weights[k - 1] -= W.sgn() * _lambdaRegulL1 * (_eta / batchSize);
+			// Biases[k - 1]  -= B.sgn() * _lambdaRegulL1 * (eta / batchSize);
+			Weights[k - 1] -= W.sgn() * _lambdaRegulL1 * (eta / batchSize);
 		}
 		if (_regulL2)  {
-			Biases[k - 1]  -= B * _lambdaRegulL2 * (_eta / batchSize);
-			Weights[k - 1] -= W * _lambdaRegulL2 * (_eta / batchSize);
+			// Biases[k - 1]  -= B * _lambdaRegulL2 * (eta / batchSize);
+			Weights[k - 1] -= W * _lambdaRegulL2 * (eta / batchSize);
 		}
 
 // Force weights to zero if lower than threshold
 		if (_zeroWeights) {
-			int nbBiasClip   = Biases[k - 1].clipToZero(_zeroThreshold);
-			int nbWeightClip = Weights[k - 1].clipToZero(_zeroThreshold);
-			if (nbBiasClip + nbWeightClip == 0) 
-				Serial.printf ("Warning: clipping threshold (%.4f) too low, no weights to clip...", _zeroThreshold);
+			int nbBiasClip    = Biases[k - 1].clipToZero(_zeroThreshold);
+			int nbWeightClip  = Weights[k - 1].clipToZero(_zeroThreshold);
+			int nbWeight2Clip = (_quadLayers) ? Weights2[k - 1].clipToZero(_zeroThreshold) : 0;
+			if (nbBiasClip + nbWeightClip + nbWeight2Clip == 0 && _verbose > 1) 
+				Serial.printf ("Warning: clipping threshold (%.4f) too low, no weights to clip...\n", _zeroThreshold);
 		}
 	}
 	_firstRun = false;
@@ -1589,12 +1864,15 @@ void MLP::searchBestWeights(const MLMatrix<float> x0, const MLMatrix<float> y0)
 	MLMatrix<float> x(_nInputs,  1, 0.0f);  // Input array
 	MLMatrix<float> y(_nClasses, 1, 0.0f);  // Ground truth
 	
-	for (unsigned i=0; i<N; ++i) {
+	for (size_t i = 0; i < N; ++i) {
 		float err = 0.0f;
-		for (int d = 0; d < _nTrain / 3; ++d) {
-			for (int i = 0; i < _nInputs; ++i)  x(i, 0) = x0(d,i);
-			for (int c = 0; c < _nClasses; ++c) y(c, 0) = y0(d,i);
-			initWeights();
+		// Change the initialization range
+		float vmax = 0.7f - 0.6f * i / N;
+		float vmin = - vmax;
+		for (size_t d = 0; d < _nTrain / 3; ++d) {
+			for (size_t i = 0; i < _nInputs; ++i)  x(i, 0) = x0(d,i);
+			for (size_t c = 0; c < _nClasses; ++c) y(c, 0) = y0(d,i);
+			initWeights(vmin, vmax);
 // Forward pass
 			MLMatrix<float> yhat = forward (x, true);
 // Compute error
@@ -1602,14 +1880,14 @@ void MLP::searchBestWeights(const MLMatrix<float> x0, const MLMatrix<float> y0)
 		}
 		err /= (_nTrain / 3);
 		if (_verbose > 1) Serial.printf ("Trial number %d, error %f (%f)\n",i,err,minErr);
-		
+
 		if (err < minErr) {
 			minErr = err;
-			Serial.printf("--> Found better weights (error = %.4f)\n",minErr);
+			Serial.printf("--> Found better weights (error = %.4f, init = %.3f)\n",minErr, vmax);
 			saveWeights();
 		}
 	}
-	restoreWeights();
+	// restoreWeights();
 }
 
 // ************************************************************************
@@ -1619,11 +1897,11 @@ void MLP::searchBestWeights(const MLMatrix<float> x0, const MLMatrix<float> y0)
 // ************************************************************************
 void MLP::run(MLMatrix<float> x0, MLMatrix<float> y0, int maxEpochs, int batchSize, float stopError)
 {
-	Serial.printf("Batch size = %d\n",batchSize);
+	if (!_changeBSize) Serial.printf("Batch size = %d\n",batchSize);
 	Serial.printf("Stopping if error < %.3f\n",stopError);
-	Serial.println("\nRunning optimization");
+	Serial.println("\nRunning optimization...");
 
-// Dataset
+// Prepare dataset
 	if (!_datasetSplit) {
 		_nTrain = _nData * rTrain;
 		_nValid = _nData * rValid;
@@ -1634,7 +1912,7 @@ void MLP::run(MLMatrix<float> x0, MLMatrix<float> y0, int maxEpochs, int batchSi
 	// Shuffle dataset
 	shuffleDataset (x0, y0, 0, _nData);
 
-	// Train on a subset of the dataset (20%)
+	// Pre-train on a subset of the dataset (20%) for fastest beginning
 	uint16_t savenTrain, savenValid, nimprove = 0;
 	bool subTrain;
 	if (_dataSubset) {
@@ -1645,16 +1923,25 @@ void MLP::run(MLMatrix<float> x0, MLMatrix<float> y0, int maxEpochs, int batchSi
 		subTrain = true;
 	}
 
-// Weights
+// Prepare topK pruning
+	if (_prune_topk) {
+		b_topK.resize(_nLayers - 1);
+		for (size_t i = 0; i < _nLayers - 1; ++i) b_topK[i].resize(_neurons[i], 0.0f);
+	}
+
+// Initialize weights
 	if (_initialize) {
 		if (_verbose > 0) Serial.println("Creating a new network");
 		(_selectWeights) ? searchBestWeights(x0, y0) : initWeights();
 	}
 
+// Estimate training duration
 	uint32_t duration = estimateDuration (maxEpochs);
 	Serial.printf("Estimated maximum duration : %.2f s for %d epochs\n", duration/1000.0f, maxEpochs);
-	MLMatrix<float> x(_nInputs, 1, 0.0f);  // Input array
-	MLMatrix<float> y(_nClasses, 1, 0.0f); // Ground truth
+
+// Variables
+	MLMatrix<float> x(_nInputs,  1, 0.0f);  // Input array
+	MLMatrix<float> y(_nClasses, 1, 0.0f);  // Ground truth
 	bool _better = false;
 	_batchSize = batchSize;
 	if (_batchSize >= _nTrain) _batchSize = max(1, _nTrain / 5);
@@ -1669,6 +1956,7 @@ void MLP::run(MLMatrix<float> x0, MLMatrix<float> y0, int maxEpochs, int batchSi
 	while (epoch <= _maxEpochs) {
 		if (_verbose > 1) Serial.printf("Epoch %d\n", epoch);
 
+// Check if pre-train phase is finished
 		if (_dataSubset && subTrain) {
 			if (epoch > _maxEpochs / 3 || nimprove > 4) { // Back to entire dataset
 				_nTrain = savenTrain;
@@ -1678,24 +1966,35 @@ void MLP::run(MLMatrix<float> x0, MLMatrix<float> y0, int maxEpochs, int batchSi
 				Serial.println("Now training on the entire dataset");
 			}
 		}
-		// if (!_bestEta) heuristics(epoch, _maxEpochs, _better);
-		if (epoch > 1) heuristics(epoch, _maxEpochs, _better);
-		_prevError = _currError;
 
+// Manage hyper-parameters
+		if (epoch > 1) heuristics(epoch, _maxEpochs, _better);
+
+		_prevError = _currError;
 		float totalError = 0.0f;
 		int data = 0;
+
+		if (_changeBSize) { // (heuristics) change batch size
+			float coef = _maxBS + epoch * (_minBS - _maxBS) / _maxEpochs;
+			batchSize = int(coef * _nTrain);
+			if (batchSize < 1) batchSize = 1;
+			if (_verbose > 0) Serial.printf ("Batch size = %d\n", batchSize);
+		}
+// Loop over training set
 		while (data < _nTrain) {
 			dWeightsOld = dWeights;
+			if (_quadLayers) dWeightsOld2 = dWeights2;
 			dBiasesOld = dBiases;
 			dWeights.clear();
+			if (_quadLayers) dWeights2.clear();
 			dBiases.clear();
-			if (_verbose > 1) Serial.printf ("Data number %d (%d)\n", data, batchSize);
+			if (_verbose > 2) Serial.printf ("Data number %d (%d)\n", data, batchSize);
 			float err;
 
 // Loop over minibatch
-			for (int d = 0; d < batchSize; ++d) {
-				for (int i = 0; i < _nInputs; ++i)  x(i, 0) = x0(data + d,i);
-				for (int c = 0; c < _nClasses; ++c) y(c, 0) = y0(data + d,c);
+			for (size_t d = 0; d < batchSize; ++d) {
+				for (size_t i = 0; i < _nInputs; ++i)  x(i, 0) = x0(data + d,i);
+				for (size_t c = 0; c < _nClasses; ++c) y(c, 0) = y0(data + d,c);
 				if (_verbose > 2) {
 					Serial.printf ("Batch %d:\n", d);
 					Serial.print ("x ="); x.print();
@@ -1710,7 +2009,7 @@ void MLP::run(MLMatrix<float> x0, MLMatrix<float> y0, int maxEpochs, int batchSi
 				backward (yhat, y, d);
 			} // end batch
 // Update weights
-			if (_bestEta) searchEta (x, y, err);
+			if (_bestEta) searchEta (x, y, err); // TBD!!!
 			else update (batchSize);
 			data += batchSize;
 			if (_nTrain - data < batchSize) batchSize = _nTrain - data;
@@ -1718,95 +2017,138 @@ void MLP::run(MLMatrix<float> x0, MLMatrix<float> y0, int maxEpochs, int batchSi
 
 		_currError = totalError / _nTrain;
 		if (epoch == 1) _firstError = _currError;
+		if (_verbose > 1) Serial.printf("Epoch %4d \tAverage error : %8.4f (validation %8.4f)\n", epoch, _currError, _validError);
 
-		if (_currError < _minError or epoch == 1) { // Error has decreased
+
+// Error has decreased...
+		if (_currError < _minError or epoch == 1) {
 			saveWeights();
 			++nimprove;
 			_lastBestEpoch = epoch;
 			_prevMinError = _minError;
 			_minError = _currError;
-
+// Compute error on validation set only if train error decreased
 			_validError = testNet(x0, y0, _nTrain, _nValid, false);
 			if (!_better) Serial.println();
-			Serial.printf("Epoch %d \tAverage error : %8.4f (validation %8.4f)\n", epoch, _currError, _validError);
+			Serial.printf("Epoch %4d\tAverage error : %8.4f (validation %8.4f)\n", epoch, _currError, _validError);
 			_better = true;
 			_nDots = 0;
-		} else {
+
+		} else { // ...error has not decreased
 			if (_verbose >0) Serial.print(".");
 			_better = false;
 			++ _nDots;
-			if (_nDots > 5 && _shuffleDataset && rand01() < 0.25f) {
-				Serial.println ("Shuffling training dataset");
-				shuffleDataset (x0, y0, 0, _nTrain);
-			}
 		}
+// Check if objective has been reached
 		if (!_stopTotalError && _currError < stopError) break;
 		if (_stopTotalError && _currError + _validError < stopError) break;
-		++ epoch;
-		batchSize = _batchSize;
 
-		// Prune inactive neurons
-		if (_prune_train) {
-			// First prune phase : error < 6 * _stopError
-			if (pruneEpochs == 0 && _currError < 4 * _stopError) {
-				++pruneEpochs;
-				if (pruneAll()) size();
-			}
-			// Second prune phase : error < 3 * _stopError
-			if (pruneEpochs == 1 && _currError < 2 * _stopError) {
-				++pruneEpochs;
-				if (pruneInactive() != 0) size();
+// Top-K pruning every 5 epochs
+		if (_prune_topk && epoch%5 == 0 && _currError > stopError * 2) { 
+			if (pruneTopK(x0, y0) != 0) {
+				size();
+				float newValidError = testNet(x0, y0, _nTrain, _nValid, false);
+				float delta = (newValidError - _validError) / _validError; // relative variation of validation error
+				if (delta > 0.1f) { // error changed too much : add a neuron
+					int layer = random(1, _nLayers - 1);
+					Serial.printf("Validation error changed (%.3f --> %.3f): adding a neuron to layer %d\n", 
+						_validError, newValidError, layer);
+					addNeuron(layer);
+					size();
+				}
 			}
 		}
 
+		++ epoch; // Increase epoch number
+		batchSize = _batchSize;
+
+// Shuffle training set after each epoch to break biases
+		// if (_nDots > 5 && _shuffleDataset && rand01() < 0.20f) {
+		if (_shuffleDataset) {
+			if (_verbose > 1) Serial.println ("Shuffling training dataset");
+			shuffleDataset (x0, y0, 0, _nTrain);
+		}
+		
+// Prune neurons
+		if (_prune_train) {
+			// First prune phase (inactive and low activity): error < 4 * _stopError
+			if (pruneEpochs == 0 && _currError < 4 * _stopError) {
+				++pruneEpochs;
+				if (pruneAll()) {
+					size(); // Display new network's size
+					float newValidError = testNet(x0, y0, _nTrain, _nValid, false);
+					float delta = (newValidError - _validError) / _validError;
+					if (delta > 0.1f) { // error changed too much : add a neuron
+						int layer = random(1, _nLayers - 1);
+						Serial.printf("Validation error changed (%.3f --> %.3f): adding a neuron to layer %d\n", 
+							_validError, newValidError, layer);
+						addNeuron(layer);
+						size();
+					}
+					saveWeights();
+				}
+			}
+			// Second prune phase (inactive neurons): error < 2 * _stopError
+			if (pruneEpochs == 1 && _currError < 2 * _stopError) {
+				++pruneEpochs;
+				if (pruneInactive() != 0) {
+					size(); // Display new network's size
+					float newValidError = testNet(x0, y0, _nTrain, _nValid, false);
+					float delta = (newValidError - _validError) / _validError;
+					if (delta > 0.1f) { // error changed too much : add a neuron
+						int layer = random(1, _nLayers - 1);
+						Serial.printf("Validation error changed (%.3f --> %.3f): adding a neuron to layer %d\n", 
+							_validError, newValidError, layer);
+						addNeuron(layer);
+					}
+					saveWeights();
+				}
+			}
+		}
 	} // end epochs
 	Serial.printf("\nTimer : %.2f s\n", (millis() - chrono) / 1000.0f);
-	restoreWeights();
+	restoreWeights(); // Use best set of weights
 
-	// Evaluate network on test dataset
+// Evaluate network on test dataset
+	float beforeTestError;
 	if (_nTest != 0) {
 		Serial.printf("\nEvaluation on test data (%d samples):\n",_nTest);
-		float testError = testNet(x0, y0, _nTrain + _nValid, _nTest, true);
-		Serial.printf("Average test error  : %8.4f\n", testError);
+		beforeTestError = testNet(x0, y0, _nTrain + _nValid, _nTest, true);
+		Serial.printf("Average test error  : %8.4f\n", beforeTestError);
 	}
 
-	// Prune network at the end (then re-run test)
+// Prune network at the end (then re-run test) and save network if required
 	bool pruned = false;
 	if (_prune_neurons) pruned = pruneAll();
 	if (pruned) {
 		Serial.printf("\nNew evaluation on test data after pruning:\n",_nTest);
 		float testError = testNet(x0, y0, _nTrain + _nValid, _nTest, true);
 		Serial.printf("Average test error  : %8.4f\n", testError);
+		if (testError <= beforeTestError) saveWeights();
+		else Serial.println("Pruning did not improve: pruned network is not saved\n");
 	}
 }
+// End Optimization
 
-// MLMatrix<float> MLP::predict (MLMatrix<float> x)
-// {
-// 	if (_verbose > 1) Serial.println("Prediction...");
-// 	MLMatrix<float> yhat;
-// 	normalize(x, _norm);
-// 	for (int k = 0; k < _nLayers - 1; ++k) {
-// 		yhat = Weights[k] * x + Biases[k];
-// 		yhat = activation(yhat, _activations[k]);
-// 		x = yhat;
-// 	}
-// 	deNorm (yhat, _norm);
-// 	return yhat;
-// }
 
-// MLMatrix<float> MLP::predict_nonorm (MLMatrix<float> x)
+// Prediction of result
 MLMatrix<float> MLP::predict (MLMatrix<float> x)
 {
 	if (_verbose > 2) Serial.println("Prediction...");
 	MLMatrix<float> yhat;
-	for (int k = 0; k < _nLayers - 1; ++k) {
+	for (size_t k = 0; k < _nLayers - 1; ++k) {
 		yhat = Weights[k] * x + Biases[k];
+		if (_quadLayers) {
+			MLMatrix<float> x2 = x.square();
+			yhat = yhat + Weights2[k] * x2;
+		} //else // No activation for quadratic layers
 		yhat = activation(yhat, _activations[k]);
 		x = yhat;
 	}
 	return yhat;
 }
 
+// Test the network on the test set
 float MLP::testNet(const MLMatrix<float> x0, const MLMatrix<float> y0, const uint16_t begin, const uint16_t number, const bool details)
 {
 	float error = 0.0f;
@@ -1819,13 +2161,12 @@ float MLP::testNet(const MLMatrix<float> x0, const MLMatrix<float> y0, const uin
 
 	int idh0, idh1, idy0, idy1, correct = 0;
 	int nDiff = 0;
-	for (unsigned i = 0; i < number; ++i) {
-		for (unsigned j=0; j<_nInputs; ++j)  x(j,0) = x0(begin + i,j);
-		for (unsigned j=0; j<_nClasses; ++j) y(j,0) = y0(begin + i,j); // ground truth
-		// MLMatrix<float> yhat = predict_nonorm (x);
+	for (size_t i = 0; i < number; ++i) {
+		for (size_t j = 0; j < _nInputs; ++j)  x(j,0) = x0(begin + i,j);
+		for (size_t j = 0; j < _nClasses; ++j) y(j,0) = y0(begin + i,j); // ground truth
 		MLMatrix<float> yhat = predict (x);
 		float err = 0.0f;
-		if (_enSoftmax) {
+		if (_enSoftmax) { // If more than one class
 			yhat.indexMax(idh0, idh1);
 			y.indexMax(idy0, idy1);
 			err = abs(idh0 - idy0);
@@ -1835,15 +2176,15 @@ float MLP::testNet(const MLMatrix<float> x0, const MLMatrix<float> y0, const uin
 
 			// Compute the number of times that the difference between 
 			// the two first predictions is less than 1/_nClasses
-			float valMAx = yhat(idh0,0);
+			float valMAx = yhat(idh0,0); // best predicted class
 			yhat(idh0,0) = 0.0f;
-			yhat.indexMax(idh0, idh1);
-			float diff = valMAx - yhat(idh0,0);
-			if (diff * _nClasses < 1.0f) ++ nDiff;
+			yhat.indexMax(idh0, idh1);   // second best predicted class
+			float diff = valMAx - yhat(idh0,0); // difference between the two best predicted classes
+			if (diff * _nClasses < 1.0f) ++ nDiff; // means that the best prediction has low precision
 
 		} else {
 			// Serial.printf("Test %d: expected %f predicted %f (%f)\n",i,y(0,0),yhat(0,0), abs(y(0,0)-yhat(0,0)));
-			for (int c = 0; c < _nClasses; ++c) 
+			for (size_t c = 0; c < _nClasses; ++c) 
 				err += abs (y(c, 0) - yhat(c, 0));
 		}
 
@@ -1851,6 +2192,7 @@ float MLP::testNet(const MLMatrix<float> x0, const MLMatrix<float> y0, const uin
 		errGlob(i,0) = err;
 	}
 
+// Print network's statistics
 	if (details) {
 		Serial.printf(" - Minimum value of error : %8.4f\n", errGlob.min());
 		Serial.printf(" - Maximum value of error : %8.4f\n", errGlob.max());
@@ -1865,12 +2207,12 @@ float MLP::testNet(const MLMatrix<float> x0, const MLMatrix<float> y0, const uin
 			// Print confusion matrix (rows : true value, cols : predicted value)
 			float coef = 100.0f / number;
 			Serial.print("Confusion matrix:\nTR/PR");
-			for (unsigned i=0; i<_nClasses; ++i) Serial.printf(" %4d", i);
+			for (size_t i = 0; i < _nClasses; ++i) Serial.printf(" %4d", i);
 			Serial.println("  (Recall)");
-			for (unsigned i=0; i<_nClasses; ++i) {
+			for (size_t i = 0; i < _nClasses; ++i) {
 				Serial.printf ("%3d : ", i);
 				int sumI = 0;
-				for (unsigned j=0; j<_nClasses; ++j) {
+				for (size_t j = 0; j < _nClasses; ++j) {
 					Serial.printf ("%4d ", Confusion(i,j));
 					sumI += Confusion(i,j);
 				}
@@ -1879,9 +2221,10 @@ float MLP::testNet(const MLMatrix<float> x0, const MLMatrix<float> y0, const uin
 			}
 			Serial.print("Prec: ");
 			int totConf = 0;
-			for (unsigned i=0; i<_nClasses; ++i) {
+			for (size_t i = 0; i < _nClasses; ++i) {
 				totConf += Confusion(i,i);
-				Serial.printf ("%4.0f%%", 100.0f * Confusion(i,i) / Prec(i,0));
+				if (Prec(i,0) != 0)	Serial.printf ("%4.0f%%", 100.0f * Confusion(i,i) / Prec(i,0));
+				else Serial.printf ("%4.0f%%", 0.0f);
 			}
 			Serial.printf(" ->%5.1f%%\n", 100.0f * totConf / number);
 			Serial.printf ("Low precision prediction : %5.1f%%\n", 100.0f * nDiff / number);
@@ -1890,36 +2233,130 @@ float MLP::testNet(const MLMatrix<float> x0, const MLMatrix<float> y0, const uin
 	return error / number;
 }
 
+
+// ************************************************************************
+//
+//     Pruning the network
+//
+// ************************************************************************
+uint16_t MLP::pruneTopK (const MLMatrix<float> x0, const MLMatrix<float> y0)
+{
+	// Inspired from https://arxiv.org/ftp/arxiv/papers/1711/1711.06528.pdf
+	int topK = 0;
+	uint16_t before = numberOfWeights();
+	float coef = _currError / _stopError / 20;
+	if (coef > 1.0f) coef = 1.0f;
+	int min_topK = 15 * _nTrain / _batchSize * coef; // Threshold for pruning
+	Serial.print("Top K pruning: ");
+	for (size_t layer = 1; layer < _nLayers - 1; ++layer) {
+		if (_neurons[layer] > _minPerLayer) { // do not prune if not enough neurons
+			for (size_t i = 0; i < _neurons[layer]; ++i) {
+				if (b_topK[layer][i] < min_topK) { // Candidate for pruning
+					/*
+							Verify if the performances do not decrease too much after pruning
+							compare test score before and after : if less than 10% change ok for pruning
+					*/
+					float before = testNet(x0, y0, _nTrain + _nValid, _nTest, false);
+					MLMatrix<float> tempWRow = Weights[layer - 1].row(i);
+					MLMatrix<float> tempWCol = Weights[layer].col(i);
+					MLMatrix<float> tempBias = Biases[layer - 1].row(i);
+					Weights[layer - 1].setZeroRow(i);
+					Weights[layer].setZeroCol(i);
+					Biases[layer - 1].setZeroRow(i);
+					float after = testNet(x0, y0, _nTrain + _nValid, _nTest, false);
+					float score = (after - before) / before;
+					// Serial.printf("\n\t\tLayer %d pruning neuron %d: test variation %f%%\n", layer, i, 100*score);
+					//
+					if (score < 0.1f) {  // OK for pruning
+						Serial.printf("\n\tLayer %d pruning neuron %d (score %d / %d)", layer, i, b_topK[layer][i], min_topK);
+						removeNeuron(layer, i);
+						++topK;
+					} else { // Not OK: restore original values
+						Weights[layer - 1].setRowMat(i, tempWRow);
+						Weights[layer].setColMat(i, tempWCol);
+						Biases[layer - 1].setRowMat(i, tempBias);
+					}
+				}
+			}			
+		}
+	}
+
+	if (topK != 0) {
+		float percent = 100.0f - 100.0f * numberOfWeights() / before;
+		if (_verbose > 0) Serial.printf("\nTopk: succesfully pruned %d neurons\nNetwork now has %d synapses (-%.2f%%)\n",
+			topK, numberOfWeights(), percent);
+		saveWeights();
+	} else {
+		if (_verbose > 0) Serial.println("No candidate neuron found");
+	}
+
+	// Reset the counts
+	for (size_t layer = 0; layer < _nLayers - 1; ++layer)
+		for (size_t i = 0; i < _neurons[i]; ++i) 
+			b_topK[layer][i] = 0;
+	return topK;
+}
+
 uint16_t MLP::pruneInactive()
 {
 	// Search for neurons with all zero weights (inactive neurons)
-	Serial.println("Pruning inactive neurons:");
+	Serial.print("Pruning inactive neurons: ");
 	int inact = 0;
 	std::vector<int> inacLayers;
 	std::vector<int> inacNeurons;
-	for (int k = 0; k < _nLayers - 2; ++k) {
+	for (size_t k = 0; k < _nLayers - 2; ++k) {
 		MLMatrix<float> W(Weights[k]);
-		uint16_t n = W.get_rows();
+		uint16_t nrows = W.get_rows();
 		uint16_t cols = W.get_cols();
-		for (unsigned i=0; i < n; ++i) {
+		for (size_t i = 0; i < nrows; ++i) {
 			uint16_t nZ = W.countZeroRow(i);
 			if (nZ == cols) {
-				Serial.printf("\tLayer %d : neuron %d is inactive\n", k + 1,i);
-				inacLayers.push_back(k);
-				inacNeurons.push_back(i);
-				++inact;
+				uint16_t nZ2 = cols;
+				if (_quadLayers) {
+					MLMatrix<float> W2(Weights2[k]);
+					nZ2 = W2.countZeroRow(i);
+				}
+				if (nZ2 == cols) {
+					Serial.printf("\n\tLayer %d : neuron %d is inactive", k + 1,i);
+					inacLayers.push_back(k);
+					inacNeurons.push_back(i);
+					++inact;					
+				}
+			} else {
+				if (_neurons[k] > _minPerLayer) { // do not prune if not enough neurons
+					float coef = 0.5f;
+					float mean = W.meanRow(i);
+					if (mean < _zeroThreshold * coef) {
+						float mean2 = mean;
+						if (_quadLayers) {
+							MLMatrix<float> W2(Weights2[k]);
+							mean2 += W2.meanRow(i);
+						}
+						if (mean2 < _zeroThreshold * coef) {
+							Serial.printf("\n\tLayer %d : neuron %d is inactive in average (%.4f, %.4f)", k + 1,i, mean2, _zeroThreshold * coef);
+							inacLayers.push_back(k);
+							inacNeurons.push_back(i);
+							++inact;						
+						}
+					}					
+				}
 			}
 		}
 	}
+
 	if (inact == 0) Serial.println ("No inactive neuron found.");
 	else {
-		for (unsigned i = 0; i < inacLayers.size(); ++i) {
+		Serial.println();
+		int count = 0;
+		for (size_t i = 0; i < inacLayers.size(); ++i) {
+			if ((i > 0) && (inacLayers[i] != inacLayers[i - 1])) count = 0;
 			uint16_t layer = inacLayers[i];
-			uint16_t neuron = inacNeurons[i] - i;
+			uint16_t neuron = inacNeurons[i] - count;
+			++count;
 			if (_verbose > 1) Serial.printf("Removing neuron %d of layer %d\n", neuron, layer + 1);
 			removeNeuron(layer + 1, neuron);
 		}
-		if (_verbose > 0) Serial.printf("Succesfully pruned %d neurons\n", inact);
+		if (_verbose > 0) Serial.printf("Succesfully pruned %d inactive neurons\n", inact);
 	}
 	return inact;
 }
@@ -1928,40 +2365,55 @@ uint16_t MLP::pruneLowAct()
 {
 	// Search for neurons with low activity: more than XXX % weights are zeros in row
 	// (set this XXX threshold with setHeurPruning)
-	Serial.println("Pruning neurons with low activity:");
+	Serial.print("Pruning neurons with low activity: ");
 	int lowact = 0;
 	std::vector<int> lowacLayers;
 	std::vector<int> lowacNeurons;
-	for (int k = 0; k < _nLayers - 2; ++k) {
-		MLMatrix<float> W(Weights[k]);
-		uint16_t size = W.get_cols();
-		if (size > 6) { // Do not prune thin layers
-			for (unsigned i = 0; i < W.get_rows(); ++i) {
-				uint16_t n = W.countZeroRow(i);
-				if (n > int(_pruningThreshold * size)) {
-					Serial.printf("\tLayer %d : neuron %d can be pruned (%d)\n", k + 1, i, n);
-					lowacLayers.push_back(k);
-					lowacNeurons.push_back(i);
-					++lowact;
+	for (size_t k = 0; k < _nLayers - 2; ++k) {
+		if (_neurons[k] > _minPerLayer) { // do not prune if not enough neurons
+			MLMatrix<float> W(Weights[k]);
+			uint16_t size = W.get_cols();
+			if (size > 6) { // Do not prune thin layers
+				for (size_t i = 0; i < W.get_rows(); ++i) {
+					uint16_t n = W.countZeroRow(i);
+					if (n > int(_pruningThreshold * size)) {
+						uint16_t n2 = n;
+						if (_quadLayers) {
+							MLMatrix<float> W2(Weights2[k]);
+							n2 = W2.countZeroRow(i);
+						}
+						if (n2 > int(_pruningThreshold * size)) {
+							Serial.printf("\n\tLayer %d : neuron %d can be pruned (%d)", k + 1, i, n);
+							lowacLayers.push_back(k);
+							lowacNeurons.push_back(i);
+							++lowact;						
+						}
+					}
 				}
 			}
 		}
 	}
+
 	if (lowact == 0) Serial.println ("No low activity neuron found.");
 	else {
-		for (unsigned i = 0; i < lowacLayers.size(); ++i) {
+		Serial.println();
+		int count = 0;
+		for (size_t i = 0; i < lowacLayers.size(); ++i) {
+			if (i > 0 && lowacLayers[i] != lowacLayers[i - 1]) count = 0;
 			uint16_t layer = lowacLayers[i];
-			uint16_t neuron = lowacNeurons[i] - i;
-			removeNeuron(layer + 1, neuron);
+			uint16_t neuron = lowacNeurons[i] - count;
+			++count;
 			if (_verbose > 1) Serial.printf("Removing neuron %d of layer %d\n", neuron, layer + 1);
+			removeNeuron(layer + 1, neuron);
 		}
+		if (_verbose > 0) Serial.printf("Succesfully pruned %d low activity neurons\n", lowact);
 	}
 	return lowact;
 }
 
 bool MLP::pruneAll()
 {
-	Serial.println("---------------------------\nAttempting to prune the network...");
+	Serial.println("Attempting to prune the network");
 	uint16_t before = numberOfWeights();
 	bool pruned = false;
 	uint16_t inact = pruneInactive();
@@ -1973,6 +2425,7 @@ bool MLP::pruneAll()
 			nPruned, numberOfWeights(), percent);
 		pruned = true;
 	}
+	// saveWeights();
 	return pruned;
 }
 
@@ -1997,6 +2450,504 @@ void MLP::removeNeuron (const int layer, const int number)
 	dWeightsOld[_nLayers - layer - 1].removeRow(number);
 	dBiasesOld[_nLayers - layer - 1].removeRow(number);
 	dWeightsOld[_nLayers - layer - 2].removeCol(number);
+	// Quadratic layer
+	if (_quadLayers) {
+		Weights2[layer - 1].removeRow(number);
+		Weights2[layer].removeCol(number);
+		// Gradients
+		dWeights2[_nLayers - layer - 1].removeRow(number);
+		dWeights2[_nLayers - layer - 2].removeCol(number);
+		dWeightsOld2[_nLayers - layer - 1].removeRow(number);
+		dWeightsOld2[_nLayers - layer - 2].removeCol(number);
+	}
 	// Neuron
 	--_neurons[layer];
+}
+
+void MLP::addNeuron (const int layer)
+{
+	// Serial.println("Adding neuron is not ok");
+	// return;
+
+
+	if (layer == 0) {
+		Serial.println("Cannot add neuron to input layer");
+		return;
+	}
+	if (layer == _nLayers - 1) {
+		Serial.println("Cannot add neuron to output layer");
+		return;
+	}
+	// Weights
+	Weights[layer - 1].addRow(-0.5f, 0.5f);
+	Biases[layer - 1].addRow(-0.5f, 0.5f);
+	Weights[layer].addCol(-0.5f, 0.5f);
+	// Gradients
+	dWeights[_nLayers - layer - 1].addRow(-0.5f, 0.5f);
+	dBiases[_nLayers - layer - 1].addRow(-0.5f, 0.5f);
+	dWeights[_nLayers - layer - 2].addCol(-0.5f, 0.5f);
+	dWeightsOld[_nLayers - layer - 1].addRow(-0.5f, 0.5f);
+	dBiasesOld[_nLayers - layer - 1].addRow(-0.5f, 0.5f);
+	dWeightsOld[_nLayers - layer - 2].addCol(-0.5f, 0.5f);
+	// Quadratic layer
+	if (_quadLayers) {
+		Weights2[layer - 1].addRow(-0.5f, 0.5f);
+		Weights2[layer].addCol(-0.5f, 0.5f);
+		// Gradients
+		dWeights2[_nLayers - layer - 1].addRow(-0.5f, 0.5f);
+		dWeights2[_nLayers - layer - 2].addCol(-0.5f, 0.5f);
+		dWeightsOld2[_nLayers - layer - 1].addRow(-0.5f, 0.5f);
+		dWeightsOld2[_nLayers - layer - 2].addCol(-0.5f, 0.5f);
+	}
+	// Neuron
+	++_neurons[layer];
+}
+
+/******************************************************************************************************************
+*******************************************************************************************************************
+
+	Methods for the DeepShift multiplication less network
+	https://arxiv.org/abs/1905.13298# 
+
+*******************************************************************************************************************
+******************************************************************************************************************/
+using DS_t  = int32_t;
+using uDS_t = uint32_t;
+/**/
+// Forward pass
+MLMatrix<DS_t> MLP::DSforward (MLMatrix<DS_t> x, bool onlyInference)
+{
+	if (_verbose > 2) Serial.println("(DeepShift) Forward...");
+	float threshold = 0.5f;
+	// // 1: Clear workspace
+	_aDS.clear(); // sets size to 0
+	// _dropoutMasks.clear();
+	MLMatrix<DS_t> yhat;
+	// 2: Forward pass
+	if (!onlyInference) _aDS.push_back(x); // saved for backward pass
+
+	for (size_t k = 0; k < _nLayers - 1; ++k) {
+		// P_tilde = round(P)
+		MLMatrix<int8_t> Pt = P[k].matRound(0);
+		// Stilde = -1, 0, 1 with threshold -0.5 : +0.5
+		size_t rows = Pt.get_rows();
+		size_t cols = Pt.get_cols();
+		MLMatrix<int8_t> St(rows, cols, 0);
+		for (size_t i = 0; i < rows; ++i)
+	    for (size_t j = 0; j < cols; ++j) {
+	    	// St is boolean : 1 for negative, 0 for positive --> sign is (-1)**S or 1-2*S (much faster than pow)
+	      if (abs(S[k](i,j)) <= threshold) Pt(i,j) = -32; 
+	      if (S[k](i,j) >= threshold) St(i,j) = 0;
+	      if (S[k](i,j) < -threshold) St(i,j) = 1;
+			}
+		// Forward update
+ //  Multiply a integer vector x by a shift matrix P and a sign matrix S
+ //    y = St . 2**P . x
+ //    St is boolean : true (=1) for negative, false (=0) for positive --> sign is (-1)**S or 1-2*S (much faster than pow)
+ //    P  is uin8_t  : number of bits to left-shift the value of x
+ // NO                   the shift is limited in the range [-10 ; +10] (i.e /1024 to *1024)
+ // NO                   to store in unsigned data, the range is shifted by 10, i.e. the real shift is of P-10 with P in [0 ; 20]
+
+		// MLMatrix<int8_t> Dec;
+		// Dec = Pt - _shiftP;
+		// yhat = (1 - 2 * St) * x.MultShift(Dec);
+		yhat = (1 - 2 * St) * x.MultShift(Pt);
+		for (size_t i = 0; i < yhat.get_rows(); ++i) {
+			yhat(i,0) += DS_Biases[k](i,0);
+			yhat(i,0) = (yhat(i,0) < 0) ? 0 : yhat(i,0); // force RELU
+		}
+		if (!onlyInference) _aDS.push_back(yhat); // saved for backward pass
+		x = yhat;
+	}
+	return yhat;
+}
+
+// Back propagation
+void MLP::DSbackward (const MLMatrix<DS_t> yhat, const MLMatrix<DS_t> y, const int d)
+{
+	if (_verbose > 2) Serial.println("(DeepShift) Backward...");
+	float ln2 = log(2);
+	float threshold = 0.5f;
+	MLMatrix<DS_t> delta;
+	MLMatrix<DS_t> P_old, S_old;
+
+	for (size_t k = _nLayers - 1; k > 0; --k) {
+		if (k == _nLayers - 1) {
+			delta  = yhat - y; // last layer (MSE or Cross Entropy)
+		} else {
+			// delta  = Weights_old.transpose() * delta;
+			MLMatrix<int8_t> Pt = P[k].matRound(0);
+			// Stilde = -1, 0, 1 with threshold -0.5 : +0.5
+			size_t rows = Pt.get_rows();
+			size_t cols = Pt.get_cols();
+			MLMatrix<int8_t> St(cols, rows, 0);
+			for (size_t i = 0; i < rows; ++i)
+		    for (size_t j = 0; j < cols; ++j) {
+		    	// St is boolean : 1 for negative, 0 for positive --> sign is (-1)**S or 1-2*S (much faster than pow)
+		      if (abs(S[k](i,j)) <= threshold) Pt(i,j) = -32; // will right shift of 10 bits
+		      if (S[k](i,j) >= threshold) St(j,i) = 0;
+		      if (S[k](i,j) < -threshold) St(j,i) = 1;
+				}
+			MLMatrix<int8_t> Dec;
+			// Dec = (Pt - _shiftP).transpose();
+			Dec = Pt.transpose();
+			delta = (1 - 2 * St) * delta.MultShift(Dec);
+		}
+		// MLMatrix<uint8_t> b(_aDS[k]);
+		for (size_t i = 0; i < _aDS[k].get_rows(); ++i) {
+			// b(i,0) = (_aDS[k](i,0) < 0) ? 0 : 1; // Force RELU
+			// delta(i,0) = delta(i,0) * b(i,0); 		 // delta = delta.Hadamard(b);
+			delta(i,0) = (_aDS[k](i,0) < 0) ? 0 : delta(i,0);
+		}
+
+		P_old = P[k - 1];
+		S_old = S[k - 1];
+		MLMatrix<DS_t> c = delta * _aDS[k - 1].transpose();
+
+		// Compute gradients
+		if (d == 0) {
+			dP.push_back(c);
+			dS.push_back(c);
+			DS_dBiases.push_back(delta);
+		}	else {
+			dP[_nLayers - 1 - k] += c;
+			dS[_nLayers - 1 - k] += c;
+			dBiases[_nLayers - 1 - k] += delta;
+		}
+  }
+}
+
+void MLP::DSrun(MLMatrix<float> x0, MLMatrix<float> y0, int maxEpochs, int batchSize, float stopError)
+{
+	if (!_changeBSize) Serial.printf("Batch size = %d\n",batchSize);
+	Serial.printf("Stopping if error < %.3f\n",stopError);
+	Serial.println("\nRunning optimization...");
+
+// Prepare dataset
+	if (!_datasetSplit) {
+		_nTrain = _nData * rTrain;
+		_nValid = _nData * rValid;
+		_nTest  = _nData * rTest;
+		Serial.printf ("Dataset split in: %d train + %d validation + %d test data\n", _nTrain, _nValid, _nTest);
+		_datasetSplit = true;
+	}
+	// Shuffle dataset
+	shuffleDataset (x0, y0, 0, _nData);
+
+	// Pre-train on a subset of the dataset (20%) for fastest beginning
+	uint16_t savenTrain, savenValid, nimprove = 0;
+	bool subTrain;
+	if (_dataSubset) {
+		savenTrain = _nTrain;
+		savenValid = _nValid;
+		_nTrain /= 5;
+		_nValid /= 5;
+		subTrain = true;
+	}
+
+// Prepare topK pruning
+	if (_prune_topk) {
+		b_topK.resize(_nLayers - 1);
+		for (size_t i = 0; i < _nLayers - 1; ++i) b_topK[i].resize(_neurons[i], 0.0f);
+	}
+
+// Initialize weights
+	if (_initialize) {
+		if (_verbose > 0) Serial.println("Creating a new network");
+		// (_selectWeights) ? searchBestWeights(x0, y0) : DSinitWeights();
+		DSinitWeights(-5, 6);
+	}
+
+// Estimate training duration
+	uint32_t duration = estimateDuration (maxEpochs);
+	Serial.printf("Estimated maximum duration : %.2f s for %d epochs\n", duration/1000.0f, maxEpochs);
+
+// Variables
+	MLMatrix<DS_t> x(_nInputs,  1, 0.0f);  // Input array
+	MLMatrix<DS_t> y(_nClasses, 1, 0.0f);  // Ground truth
+	bool _better = false;
+	_batchSize = batchSize;
+	if (_batchSize >= _nTrain) _batchSize = max(1, _nTrain / 5);
+	_stopError = stopError;
+	_firstRun = true;
+	_maxEpochs = maxEpochs;
+	byte pruneEpochs = 0;
+
+	// Epochs loop...
+	int epoch = 1;
+	unsigned long chrono = millis();
+	while (epoch <= _maxEpochs) {
+		if (_verbose > 1) Serial.printf("Epoch %d\n", epoch);
+
+// Check if pre-train phase is finished
+		if (_dataSubset && subTrain) {
+			if (epoch > _maxEpochs / 3 || nimprove > 4) { // Back to entire dataset
+				_nTrain = savenTrain;
+				_nValid = savenValid;
+				subTrain = false;
+				_minError *= 10.0f;
+				Serial.println("Now training on the entire dataset");
+			}
+		}
+
+// Manage hyper-parameters
+		if (epoch > 1) heuristics(epoch, _maxEpochs, _better);
+
+		_prevError = _currError;
+		float totalError = 0.0f;
+		int data = 0;
+
+		if (_changeBSize) { // (heuristics) change batch size
+			float coef = _maxBS + epoch * (_minBS - _maxBS) / _maxEpochs;
+			batchSize = int(coef * _nTrain);
+			if (batchSize < 1) batchSize = 1;
+			if (_verbose > 0) Serial.printf ("Batch size = %d\n", batchSize);
+		}
+// Loop over training set
+		while (data < _nTrain) {
+			dWeightsOld = dWeights;
+			if (_quadLayers) dWeightsOld2 = dWeights2;
+			dBiasesOld = dBiases;
+			dWeights.clear();
+			if (_quadLayers) dWeights2.clear();
+			dBiases.clear();
+			if (_verbose > 2) Serial.printf ("Data number %d (%d)\n", data, batchSize);
+			uDS_t err;
+
+// Loop over minibatch
+			float coef = pow(2.0f, 16);
+			for (size_t d = 0; d < batchSize; ++d) {
+				for (size_t i = 0; i < _nInputs; ++i)  x(i, 0) = x0(data + d,i) * coef;
+				for (size_t c = 0; c < _nClasses; ++c) y(c, 0) = y0(data + d,c) * coef;
+				if (_verbose > 2) {
+					Serial.printf ("Batch %d:\n", d);
+					Serial.print ("x ="); x.print();
+					Serial.print ("y ="); y.print();
+				}
+// Forward pass
+				MLMatrix<DS_t> yhat = DSforward (x, false);
+// Compute error
+				err = DSerror (y, yhat);
+				totalError += err / coef;
+// Backward pass
+				DSbackward (yhat, y, d);
+			} // end batch
+// Update weights
+			// if (_bestEta) searchEta (x, y, err); // TBD!!!
+			// else 
+			DSupdate (batchSize);
+			data += batchSize;
+			if (_nTrain - data < batchSize) batchSize = _nTrain - data;
+		} // end data
+
+		_currError = totalError / _nTrain;
+		if (epoch == 1) _firstError = _currError;
+		if (_verbose > 1) Serial.printf("Epoch %4d \tAverage error : %8.4f (validation %8.4f)\n", epoch, _currError, _validError);
+
+
+// Error has decreased...
+		if (_currError < _minError or epoch == 1) {
+			saveWeights();
+			++nimprove;
+			_lastBestEpoch = epoch;
+			_prevMinError = _minError;
+			_minError = _currError;
+// Compute error on validation set only if train error decreased
+			_validError = testNet(x0, y0, _nTrain, _nValid, false);
+			if (!_better) Serial.println();
+			Serial.printf("Epoch %4d\tAverage error : %8.4f (validation %8.4f)\n", epoch, _currError, _validError);
+			_better = true;
+			_nDots = 0;
+
+		} else { // ...error has not decreased
+			if (_verbose >0) Serial.print(".");
+			_better = false;
+			++ _nDots;
+		}
+// Check if objective has been reached
+		if (!_stopTotalError && _currError < stopError) break;
+		if (_stopTotalError && _currError + _validError < stopError) break;
+
+// Top-K pruning every 5 epochs
+		if (_prune_topk && epoch%5 == 0 && _currError > stopError * 2) { 
+			if (pruneTopK(x0, y0) != 0) size();
+		}
+
+		++ epoch; // Increase epoch number
+		batchSize = _batchSize;
+
+// Shuffle training set after each epoch to break biases
+		// if (_nDots > 5 && _shuffleDataset && rand01() < 0.20f) {
+		if (_shuffleDataset) {
+			if (_verbose > 1) Serial.println ("Shuffling training dataset");
+			shuffleDataset (x0, y0, 0, _nTrain);
+		}
+		
+// Prune neurons
+		if (_prune_train) {
+			// First prune phase (inactive and low activity): error < 4 * _stopError
+			if (pruneEpochs == 0 && _currError < 4 * _stopError) {
+				++pruneEpochs;
+				if (pruneAll()) size(); // Display new network's size
+			}
+			// Second prune phase (inactive neurons): error < 2 * _stopError
+			if (pruneEpochs == 1 && _currError < 2 * _stopError) {
+				++pruneEpochs;
+				if (pruneInactive() != 0) size(); // Display new network's size
+			}
+		}
+	} // end epochs
+	Serial.printf("\nTimer : %.2f s\n", (millis() - chrono) / 1000.0f);
+	restoreWeights(); // Use best set of weights
+
+// Evaluate network on test dataset
+	float beforeTestError;
+	if (_nTest != 0) {
+		Serial.printf("\nEvaluation on test data (%d samples):\n",_nTest);
+		beforeTestError = testNet(x0, y0, _nTrain + _nValid, _nTest, true);
+		Serial.printf("Average test error  : %8.4f\n", beforeTestError);
+	}
+
+// Prune network at the end (then re-run test) and save network if required
+	bool pruned = false;
+	if (_prune_neurons) pruned = pruneAll();
+	if (pruned) {
+		Serial.printf("\nNew evaluation on test data after pruning:\n",_nTest);
+		float testError = testNet(x0, y0, _nTrain + _nValid, _nTest, true);
+		Serial.printf("Average test error  : %8.4f\n", testError);
+		if (testError <= beforeTestError) saveWeights();
+		else Serial.println("Pruning did not improve: pruned network is not saved");
+	}
+}
+// End Optimization
+
+// Initialize weights & biases : random uniform or Xavier
+void MLP::DSinitWeights (const DS_t vmin, const DS_t vmax)
+{
+	if (_verbose > 2) Serial.println("(DeepShift) Init weights...");
+	float coef = pow(2.0f, 15);
+	P.clear();
+	S.clear();
+	DS_Biases.clear();
+	if (_quadLayers) { P2.clear(); S2.clear(); }
+
+	for (size_t k = 0; k < _nLayers - 1; ++k) {
+		MLMatrix<DS_t> MP(_neurons[k + 1], _neurons[k], vmin, vmax);
+		MLMatrix<DS_t> MS(_neurons[k + 1], _neurons[k], 0, 2);
+		MLMatrix<DS_t> B(_neurons[k + 1], 1, -coef, coef);
+
+		P.push_back(MP);
+		S.push_back(MS);
+		DS_Biases.push_back(B);
+
+		if (_quadLayers) {
+			MLMatrix<DS_t> MP2(_neurons[k + 1], _neurons[k], vmin, vmax);
+			MLMatrix<DS_t> MS2(_neurons[k + 1], _neurons[k], 0, 2);
+			P2.push_back(MP2);
+			S2.push_back(MS2);
+		}
+
+		if (_verbose > 2) {
+			MP.print(); MS.print();
+			if (_quadLayers) {
+				MLMatrix<DS_t> MP2 = P2.back();
+				MP2.print();
+				MLMatrix<DS_t> MS2 = S2.back();
+				MS2.print();
+			}
+			B.print();
+		}
+	}
+}
+
+
+uDS_t MLP::DSerror (MLMatrix<DS_t> y, MLMatrix<DS_t> yhat) const
+{
+	if (_verbose > 2) Serial.print("Error... ");
+	float coef = pow(2.0f, 16);
+	DS_t err = 0.0f;
+	int idh0, idh1, idy0, idy1;
+	if (_enSoftmax) {
+		yhat.indexMax(idh0, idh1);
+		y.indexMax(idy0, idy1);
+		err = abs(idh0 - idy0) * coef;
+	} else {
+		for (size_t c = 0; c < _nClasses; ++c) 
+			err += abs (y(c, 0) - yhat(c, 0));
+	}
+	return err;
+}
+
+// Update weights & biases
+void MLP::DSupdate (const int batchSize)
+{
+	float eta = _eta;
+	for (size_t k = _nLayers - 1; k > 0; --k) {
+		// Testing layer specific learning rates (aka differential LR): not convincing
+		// eta = _eta * (1.0f + (_nLayers - k - 1.0f) / (_nLayers - 2.0f)); // LR decreasing with deeper layers
+		// eta = _eta * (1.0f + (k - 1.0f) / (_nLayers - 2.0f)); // LR increasing with deeper layers (better)
+		MLMatrix<DS_t> MP = P[k - 1];
+		MLMatrix<DS_t> MS = S[k - 1];
+		// MLMatrix<float> B = Biases[k - 1];
+
+// Gradient clipping
+		if (_gradClip && !_firstRun) {
+			DS_dBiases[_nLayers - 1 - k].clipMax(_gradClipValue);
+			dP[_nLayers - 1 - k].clipMax(_gradClipValue);
+			if (_quadLayers) dP2[_nLayers - 1 - k].clipMax(_gradClipValue);
+		}
+
+// Rescale gradient
+		if (_gradScaling && !_firstRun) {
+			bool zeroNorm = dBiases[_nLayers - 1 - k].normScale2(_gradScale);
+			if (zeroNorm) {
+				Serial.printf("Warning: biases gradients are zero (layer %d)\n", k);
+				DS_dBiases[_nLayers - 1 - k].print();
+			}
+			zeroNorm = dP[_nLayers - 1 - k].normScale2(_gradScale);
+			if (_quadLayers) zeroNorm += dP2[_nLayers - 1 - k].normScale2(_gradScale);
+			if (zeroNorm)	{
+				Serial.printf("Warning: weights gradients are zero (layer %d)\n", k);
+				dP[_nLayers - 1 - k].print();
+			}
+		}
+
+// Update weights
+		DS_Biases[k - 1] = DS_Biases[k - 1] - DS_dBiases[_nLayers - 1 - k]  * (eta / batchSize);
+		P[k - 1] = P[k - 1] - dP[_nLayers - 1 - k] * (eta / batchSize);
+		S[k - 1] = S[k - 1] - dS[_nLayers - 1 - k] * (eta / batchSize);
+		if (_quadLayers) {
+			P2[k - 1] = P2[k - 1] - dP2[_nLayers - 1 - k] * (eta / batchSize);
+			S2[k - 1] = S2[k - 1] - dS2[_nLayers - 1 - k] * (eta / batchSize);
+		}
+		if (!_firstRun) {
+			DS_Biases[k - 1] = DS_Biases[k - 1] - DS_dBiasesOld[_nLayers - 1 - k]  * (_momentum / batchSize);
+			P[k - 1] = P[k - 1] - dPOld[_nLayers - 1 - k] * (_momentum / batchSize);
+			S[k - 1] = S[k - 1] - dSOld[_nLayers - 1 - k] * (_momentum / batchSize);
+			if (_quadLayers) {
+				P2[k - 1] = P2[k - 1] - dP2Old[_nLayers - 1 - k] * (_momentum / batchSize);
+				S2[k - 1] = S2[k - 1] - dS2Old[_nLayers - 1 - k] * (_momentum / batchSize);
+			}
+		}
+
+// Apply regularization penalty
+		if (_regulL1)  {
+			// DS_Biases[k - 1]  -= B.sgn() * _lambdaRegulL1 * (eta / batchSize);
+			P[k - 1] = P[k - 1] - MP.sgn() * _lambdaRegulL1 * (eta / batchSize);
+		}
+		if (_regulL2)  {
+			// DS_Biases[k - 1]  -= B * _lambdaRegulL2 * (eta / batchSize);
+			P[k - 1] = P[k - 1] - MP * _lambdaRegulL2 * (eta / batchSize);
+		}
+
+// Force weights to zero if lower than threshold
+		// if (_zeroWeights) {
+		// 	int nbBiasClip    = DS_Biases[k - 1].clipToZero(_zeroThreshold);
+		// 	int nbWeightClip  = P[k - 1].clipMin(-6);
+		// 	int nbWeight2Clip = (_quadLayers) ? P2[k - 1].clipToZero(_zeroThreshold) : 0;
+		// 	if (nbBiasClip + nbWeightClip + nbWeight2Clip == 0 && _verbose > 1) 
+		// 		Serial.printf ("Warning: clipping threshold (%.4f) too low, no weights to clip...\n", _zeroThreshold);
+		// }
+	}
+	_firstRun = false;
 }

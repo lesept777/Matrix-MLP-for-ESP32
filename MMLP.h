@@ -1,7 +1,7 @@
 /*
     Multilayer Perceptron library for ESP32
 
-    (c) 2021 Lesept
+    (c) 2022 Lesept
     contact: lesept777@gmail.com
 
     Permission is hereby granted, free of charge, to any person obtaining
@@ -26,7 +26,8 @@
 #define MLP_h
 
 #include <Arduino.h>
-#include "Matrix.h"
+#include "MatrixUT.hpp"
+// #include "Matrix.h"
 #include "FS.h"
 #include <LITTLEFS.h>
 
@@ -36,29 +37,34 @@
 #endif
 
 // Heuristics options: set them if...
-#define H_INIT_OPTIM      0x01  // if you initialize optimize
-#define H_CHAN_WEIGH      0x02  // enable brand new random weights when needed
-#define H_MUTA_WEIGH      0x04  // to slightly change the weights
-#define H_CHAN_LRLIN      0x08  // to linearly change the learning rate
-#define H_CHAN_LRLOG      0x10  // to change the learning rate log scale
-#define H_CHAN_SGAIN      0x20  // to randomly change the sigmoid gain
-#define H_CHAN_MOMEN      0x40  // to randomly change the momentum
-#define H_SHUF_DATAS      0x80  // to shuffle the dataset
-#define H_ZERO_WEIGH     0x100  // to force low weights to 0
-#define H_STOP_TOTER     0x200  // stop optimization if test + train Error < threshold 
-#define H_SELE_WEIGH     0x400  // select best weights over 30 random sets
-#define H_INIT_XAVIE     0x800  // init weights with Xavier method
-#define H_REG1_WEIGH    0x1000  // use L1 weight regularization
-#define H_REG2_WEIGH    0x2000  // use L2 weight regularization
-#define H_BEST_ETA      0x4000  // search for best learning rate each epoch
-#define H_LABL_SMOOT    0x8000  // for label smoothing
-#define H_GRAD_CLIP    0x10000  // for gradient clipping
-#define H_GRAD_SCALE   0x20000  // for gradient scaling
-#define H_CHAN_MOLIN   0x40000  // change the momentum throughout the epochs
-#define H_DATA_SUBSE   0x80000  // begin training on a subset of the dataset
-#define H_TOPK_PRUNE  0x100000  // prune network using Top-K method
-#define H_TEST_PRUNE  0x200000  // prune inactive or low activity neurons at test phase
-#define H_TRAI_PRUNE  0x400000  // prune inactive neurons during training
+#define H_INIT_OPTIM        0x01  // if you initialize optimize
+#define H_CHAN_WEIGH        0x02  // enable brand new random weights when needed
+#define H_MUTA_WEIGH        0x04  // to slightly change the weights
+#define H_CHAN_LRLIN        0x08  // to linearly change the learning rate
+#define H_CHAN_LRLOG        0x10  // to change the learning rate log scale
+#define H_CHAN_SGAIN        0x20  // to randomly change the sigmoid gain
+#define H_CHAN_MOMEN        0x40  // to randomly change the momentum
+#define H_SHUF_DATAS        0x80  // to shuffle the dataset
+#define H_ZERO_WEIGH       0x100  // to force low weights to 0
+#define H_STOP_TOTER       0x200  // stop optimization if test + train Error < threshold 
+#define H_SELE_WEIGH       0x400  // select best weights over 30 random sets
+#define H_INIT_XAVIE       0x800  // init weights with Xavier method
+#define H_REG1_WEIGH      0x1000  // use L1 weight regularization
+#define H_REG2_WEIGH      0x2000  // use L2 weight regularization
+#define H_BEST_ETA        0x4000  // search for best learning rate each epoch
+#define H_LABL_SMOOT      0x8000  // for label smoothing
+#define H_GRAD_CLIP      0x10000  // clip gradient over threshold
+#define H_GRAD_SCALE     0x20000  // for gradient scaling
+#define H_CHAN_MOLIN     0x40000  // change the momentum throughout the epochs
+#define H_DATA_SUBSE     0x80000  // begin training on a subset of the dataset
+#define H_TOPK_PRUNE    0x100000  // prune network using Top-K method
+#define H_TEST_PRUNE    0x200000  // prune inactive or low activity neurons at test phase
+#define H_TRAI_PRUNE    0x400000  // prune inactive neurons during training
+#define H_DROP_OUT      0x800000  // dropout: randomly remove neurons during forward prop (not good)
+#define H_CHAN_BATSZ   0x1000000  // change the batch size during training
+#define H_QUAD_LAYER   0x2000000  // use quadratic layers
+#define H_DEEP_SHIFT   0x4000000  // use the Deep Shift algorithm
+#define H_SKIP_CNECT   0x8000000  // use skip connections (not coded yet...)
 
 // 9 activation functions
 enum ACTIVATION {
@@ -66,12 +72,13 @@ enum ACTIVATION {
   SIGMOID,  // 1
   TANH,     // 2
   SOFTMAX,  // 3
-  SIGMOID2, // 4 (sigmoid with constant partswhen close to +-1, quicker)
+  SIGMOID2, // 4 (sigmoid with constant parts when close to +-1, quicker)
   ID,       // 5 (identity)
   LEAKYRELU,// 6 (returns 0.1 * x if x<0)
   ELU,      // 7
   SELU,     // 8
-  RELU6     // 9 (ReLu clipping at 6)
+  RELU6,    // 9 (ReLu clipping at 6)
+  SWISH     // 10
 };
 
 // 3 cost functions
@@ -88,7 +95,8 @@ class MLP
   public:
 // Constructor
     MLP(const int*, const int, const int = 1);
-    ~MLP();
+    // ~MLP();
+    virtual ~MLP();
 
 // Hyper parameters
 // learning rate and momentum
@@ -103,9 +111,10 @@ class MLP
     void setHeurChangeMomentum (const bool, const float = 0.1f, const float = 1.5f);
     void setHeurChangeGain     (const bool, const float = 0.5f, const float = 2.0f);
     void setHeurInitialize     (const bool);
-    void setHeurGradScale      (const bool, const float);
+    void setHeurGradScale      (const bool, const float = 1.0f);
     void setHeurGradClip       (const bool, const float);
     void setHeurPruning        (const bool, const float = 0.85f);
+    void setHeurTopK           (const bool, const float);
 
 // Activation functions of each layer
     void setActivations (const int *);
@@ -119,6 +128,7 @@ class MLP
     void setEta        (const float);
     void setEtaRange   (const float, const float);
     void setMomRange   (const float, const float);
+    void setBSizeRange (float, float);
     void setGain       (const float);
 
     int   getEpochs    ();
@@ -130,7 +140,7 @@ class MLP
 
 // Dataset functions
     void setTrainTest (float, float, float);
-    void createDataset (const MLMatrix<float> , MLMatrix<float> &, const int);
+    void createDataset (MLMatrix<float> , MLMatrix<float> &, const int);
     void shuffleDataset (MLMatrix<float> &, MLMatrix<float> &, uint16_t, uint16_t);
     void createDatasetFromArray (MLMatrix<float> &, MLMatrix<float> &, const float *, const float *, const int);
     void createDatasetFromVector (MLMatrix<float> &, MLMatrix<float> &, const std::vector<float>, const std::vector<float>);
@@ -168,6 +178,16 @@ class MLP
     float meanWeights     ();
     float stdevWeights    (const float);
 
+// DS
+    using DS_t  = int32_t;
+    using uDS_t = uint32_t;
+    void  DSrun         (MLMatrix<float>, MLMatrix<float>, int, int, float);
+    MLMatrix<DS_t> DSforward (MLMatrix<DS_t>, bool);
+    uDS_t DSerror       (MLMatrix<DS_t>, MLMatrix<DS_t>) const;
+    void  DSbackward    (const MLMatrix<DS_t>, const MLMatrix<DS_t>, const int);
+    void  DSinitWeights (const DS_t, const DS_t);
+    void  DSupdate      (const int);
+
 // Misc functions
     int   size            () const;
     void  displayNetwork  ();
@@ -178,7 +198,9 @@ class MLP
     bool     pruneAll     ();
     uint16_t pruneInactive();
     uint16_t pruneLowAct  ();
+    uint16_t pruneTopK    (const MLMatrix<float>, const MLMatrix<float>);
     void     removeNeuron (const int, const int);
+    void     addNeuron    (const int);
 
   private:
 
@@ -202,19 +224,24 @@ class MLP
     float _maxMom    = 0.99f;
     float _minGain   = 0.5f;
     float _maxGain   = 2.0f;
+    float _minBS     = 0.05f;
+    float _maxBS     = 0.2f;
 
-    float _lambdaRegulL1  = 0.5f;
-    float _lambdaRegulL2  = 0.5f;
+    float _lambdaRegulL1  = 0.1f;
+    float _lambdaRegulL2  = 0.1f;
     float _gradScale      = 1.0f;
     float _gradClipValue  = 0.75f;
     float _zeroThreshold  = 0.15f;
     float _pruningThreshold = 0.85f;
+    float _dropout_prob   = 0.1f;
 
     float rTrain = 4.0f / 6.0f;
     float rValid = 1.0f / 6.0f;
     float rTest  = 1.0f / 6.0f;
     uint8_t _norm    = 0;
     uint8_t _nDots   = 0;
+    float _topKpcent = 0.50f; // not lower than 0.4
+    uint8_t _minPerLayer = 3;
 
 // Private variables
     uint8_t _nLayers, _nInputs, _nClasses;
@@ -244,16 +271,40 @@ class MLP
 
 // Network parameters (weights)
     std::vector<MLMatrix<float> > Weights;
+    std::vector<MLMatrix<float> > Weights2;
     std::vector<MLMatrix<float> > Biases;
     std::vector<MLMatrix<float> > dWeights;
+    std::vector<MLMatrix<float> > dWeights2;
     std::vector<MLMatrix<float> > dBiases;
     std::vector<MLMatrix<float> > dWeightsOld;
+    std::vector<MLMatrix<float> > dWeightsOld2;
     std::vector<MLMatrix<float> > dBiasesOld;
     std::vector<MLMatrix<float> > _a;
-    // std::vector<MLMatrix<float> > _z;
+    std::vector<MLMatrix<uint8_t> > _dropoutMasks;
+    std::vector <std::vector<uint16_t> > b_topK;
+
+// DeepShift 
+    std::vector<MLMatrix<DS_t> > _aDS;
+    std::vector<MLMatrix<DS_t> > DS_Biases;
+    std::vector<MLMatrix<DS_t> > DS_dBiases;
+    std::vector<MLMatrix<DS_t> > DS_dBiasesOld;
+    std::vector<MLMatrix<DS_t> > P;
+    std::vector<MLMatrix<DS_t> > S;
+    std::vector<MLMatrix<DS_t> > P2;
+    std::vector<MLMatrix<DS_t> > S2;
+    std::vector<MLMatrix<DS_t> > dP;
+    std::vector<MLMatrix<DS_t> > dS;
+    std::vector<MLMatrix<DS_t> > dP2;
+    std::vector<MLMatrix<DS_t> > dS2;
+    std::vector<MLMatrix<DS_t> > dPOld;
+    std::vector<MLMatrix<DS_t> > dSOld;
+    std::vector<MLMatrix<DS_t> > dP2Old;
+    std::vector<MLMatrix<DS_t> > dS2Old;
+    uint8_t _shiftP = 0;
 
 // Saved values (save / restore network)
     std::vector<MLMatrix<float> > Weights_save;
+    std::vector<MLMatrix<float> > Weights2_save;
     std::vector<MLMatrix<float> > Biases_save;
     float _eta_save, _momentum_save, _gain_save;
 
@@ -276,6 +327,8 @@ class MLP
     float dLeakyReLu (const float);
     float ELu (const float);
     float dELu (const float);
+    float Swish (const float);
+    float dSwish (const float);
     MLMatrix<float> SoftMax (const MLMatrix<float>);
 
 // Private functions
@@ -290,14 +343,15 @@ class MLP
     void  searchEta (MLMatrix<float>, MLMatrix<float>, float);
     int   readIntFile (File);
     float readFloatFile (File);
-    void  initWeights ();
+    void  initWeights (float = -0.5f, float = 0.5f);
+    void  topKCount (float, int, MLMatrix<float>&);
 
     // typedef float (MLP::*Act) (const float);
     // Act Activation[3] = {&MLP::ReLu, &MLP::Sigmoid, &MLP::Tanh};
     // Act dActivation[3] = {&MLP::dReLu, &MLP::dSigmoid, &MLP::dTanh};
-    char ActivNames[9][10] = {"RELU", "SIGMOID", "TANH", "SOFTMAX",
-                              "SIGMOID2", "IDENTITY", 
-                              "LEAKYRELU", "ELU", "SELU"};
+    char ActivNames[11][10] = {"RELU", "SIGMOID", "TANH", "SOFTMAX",
+                              "SIGMOID2", "IDENTITY", "LEAKYRELU", 
+                              "ELU", "SELU", "RELU6", "SWISH"};
 
 // Booleans for the heuristics
     uint32_t _heuristics     = 131157; // default value for small code
@@ -323,10 +377,14 @@ class MLP
     bool     _prune_topk     = false;
     bool     _prune_neurons  = false;
     bool     _prune_train    = false;
+    bool     _dropout        = false;
+    bool     _changeBSize    = false;
+    bool     _quadLayers     = false;
+    bool     _deepShift      = false;
 };
 
 inline float halfSquare (const float x) { return 0.5f * pow(x, 2); }
-inline float minusLog (const float x) { return -log(x + 1.0e-15); }
+inline float minusLog   (const float x) { return -log(x + 1.0e-15); }
 inline float rand01 () { return float(random(10000)) / 10000.0f; }
 
 #endif
