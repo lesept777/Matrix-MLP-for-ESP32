@@ -58,7 +58,7 @@ First load the libraries:
 #include "MMLP.h"
 ```
 ## Declare a network
-To declare a network, just create an array of int with the number of neurons in each layer. The arguments of the constructor are: number of layers, array of neurons, verbose level.
+To declare a network, just create an array of int with the number of neurons in each layer. The arguments of the constructor are: array of neurons, number of layers, verbose level.
 ```
 // Declare the network
 int Neurons[] = {2, 20, 1}; // Number of neurons in each layer (from input to output)
